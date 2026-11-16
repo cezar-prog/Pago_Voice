@@ -59,6 +59,7 @@ export interface AssistantCommands {
   removeBillFromCart: (billId: string) => void;
   clearCart: () => void;
   openCheckout: () => void;
+  openInvoice: (bill: Bill) => void;
 }
 
 /**

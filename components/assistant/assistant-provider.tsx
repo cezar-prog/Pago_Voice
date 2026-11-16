@@ -59,6 +59,10 @@ interface AssistantContextValue {
   closeCheckout: () => void;
   /** Marks every bill in the cart as paid and empties the cart. */
   confirmPayment: () => void;
+  /** Bill whose invoice is open in the viewer, or null. */
+  viewingInvoice: Bill | null;
+  openInvoice: (bill: Bill) => void;
+  closeInvoice: () => void;
 }
 
 const AssistantContext = createContext<AssistantContextValue | null>(null);
@@ -88,6 +92,7 @@ export function AssistantProvider({
   const [bills, setBills] = useState<Bill[]>(() => MOCK_BILLS.map((b) => ({ ...b })));
   const [paymentCart, setPaymentCart] = useState<CartBill[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState<Bill | null>(null);
 
   // Refs mirror state where async callbacks need the latest value.
   const isOpenRef = useRef(false);
@@ -177,6 +182,11 @@ export function AssistantProvider({
     setPaymentCart([]);
   }, []);
 
+  // ---- Invoice viewer ----------------------------------------------------
+
+  const openInvoice = useCallback((bill: Bill) => setViewingInvoice(bill), []);
+  const closeInvoice = useCallback(() => setViewingInvoice(null), []);
+
   // ---- Conversation ------------------------------------------------------
 
   const handleUtterance = useCallback(
@@ -204,6 +214,7 @@ export function AssistantProvider({
         removeBillFromCart,
         clearCart,
         openCheckout,
+        openInvoice,
       };
       const reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
       if (turn !== turnRef.current) return;
@@ -221,7 +232,7 @@ export function AssistantProvider({
         setLastActivity(Date.now());
       });
     },
-    [close, pushMessage, addBillToCart, removeBillFromCart, clearCart, openCheckout],
+    [close, pushMessage, addBillToCart, removeBillFromCart, clearCart, openCheckout, openInvoice],
   );
 
   useEffect(() => {
@@ -240,6 +251,9 @@ export function AssistantProvider({
 
   const noteActivity = useCallback(() => setLastActivity(Date.now()), []);
 
+  // Pause listening and the idle timeout while the checkout or an invoice is on screen.
+  const paused = checkoutOpen || viewingInvoice !== null;
+
   // Mutes the assistant's voice. Muting mid-speech stops the audio at once and frees the UI.
   const toggleAssistantMute = useCallback(() => {
     const next = !mutedRef.current;
@@ -257,7 +271,7 @@ export function AssistantProvider({
   // checkout is not open (so it never transcribes its own answer or the payment screen).
   // Re-runs on `micTick` to restart after the browser ends a session on silence.
   useEffect(() => {
-    if (!isOpen || !micOn || busy !== "idle" || checkoutOpen) return;
+    if (!isOpen || !micOn || busy !== "idle" || paused) return;
 
     let active = true;
     const recognizer = adaptersRef.current.createRecognizer({
@@ -293,15 +307,15 @@ export function AssistantProvider({
       active = false;
       recognizer.stop();
     };
-  }, [isOpen, micOn, busy, micTick, checkoutOpen]);
+  }, [isOpen, micOn, busy, micTick, paused]);
 
   // Idle timeout: close after 10 s with no activity (not while the assistant is working
   // or while the checkout screen is open).
   useEffect(() => {
-    if (!isOpen || busy !== "idle" || checkoutOpen) return;
+    if (!isOpen || busy !== "idle" || paused) return;
     const id = window.setTimeout(close, IDLE_TIMEOUT_MS);
     return () => window.clearTimeout(id);
-  }, [isOpen, busy, lastActivity, checkoutOpen, close]);
+  }, [isOpen, busy, lastActivity, paused, close]);
 
   const status: AssistantStatus =
     busy !== "idle" ? busy : micOn ? "listening" : "idle";
@@ -332,6 +346,9 @@ export function AssistantProvider({
       openCheckout,
       closeCheckout,
       confirmPayment,
+      viewingInvoice,
+      openInvoice,
+      closeInvoice,
     }),
     [
       isOpen,
@@ -358,6 +375,9 @@ export function AssistantProvider({
       openCheckout,
       closeCheckout,
       confirmPayment,
+      viewingInvoice,
+      openInvoice,
+      closeInvoice,
     ],
   );
 
