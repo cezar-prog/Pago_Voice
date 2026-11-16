@@ -30,6 +30,12 @@
       "member": 2,
       "time": "16 noiembrie 2026, 22:34 (ora României)",
       "headline": "Conflictul de merge cu ramura principală este rezolvat, dar commit-ul așteaptă permisiune"
+    },
+    {
+      "n": 6,
+      "member": 2,
+      "time": "16 noiembrie 2026, 23:37 (ora României)",
+      "headline": "Merge-ul cu ramura principală este trimis, păstrăm coșul nostru și AI-ul trebuie să primească cheia"
     }
   ],
   "members": {
@@ -47,12 +53,12 @@
     },
     "2": {
       "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, un coș în care strângi mai multe facturi și o plată confirmată cu Face ID sau PIN.",
-      "works": "Coșul se umple și se golește prin voce sau text, iar ecranul de plată marchează facturile plătite și le actualizează pe ecranul principal. Tot textul aplicației și răspunsurile sunt în română. Conflictul dintre ramura noastră și ramura principală, din lib/assistant/adapters.ts, este rezolvat: răspunsurile vin de la AI, iar comenzile de coș rămân locale. Nimic din acestea nu a fost rulat încă într-un browser.",
-      "blocking": "Commit-ul de rezolvare nu a fost făcut: comanda a fost refuzată de verificarea de permisiuni, așa că merge-ul rămâne în curs și nu este trimis. Node.js nu este instalat pe calculatorul meu, deci nu am putut compila sau verifica interfața. Pe telefon, butoanele prin tunelul Cloudflare nu erau confirmate. Partea AI reală este la colegul de pe ramura principală.",
+      "works": "Coșul se umple și se golește prin voce sau text, iar ecranul de plată marchează facturile plătite și le actualizează pe ecranul principal. Ecranul de plată propriu rămâne, iar ecranul de plăți din ramura principală a fost scos. Textul aplicației, răspunsurile AI și promptul sunt în română. Conexiunea cu AI-ul trece prin /api/chat, iar comenzile de coș rămân locale. Eroarea de tip din adaptoare a fost corectată. Build-ul și lint-ul nu au fost reconfirmate după corecție.",
+      "blocking": "Lipsește fișierul .env.local cu cheia API, deci AI-ul nu răspunde încă. Node.js nu este accesibil din sesiunea mea, deci nu pot rula build-ul. Pe telefon, butoanele prin tunelul Cloudflare nu au fost confirmate. Partea de voce a colegului din ramura principală rămâne în proiect, dar nu este folosită.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română și rezolvarea conflictului de merge."
+          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română și conexiunea cu AI-ul."
         },
         {
           "name": "Documentația Next.js din proiect",
@@ -79,7 +85,7 @@
           "for": "Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă."
         }
       ],
-      "next": "Să finalizez merge-ul: să adaug și să comit fișierele rezolvate, să trimit ramura și să verific PR-ul. Apoi să repornesc serverul de dezvoltare și să testez pe telefon coșul și plata, iar colegul să conecteze adaptoarele de voce și AI."
+      "next": "Să adaug fișierul .env.local cu cheia API, să repornesc serverul și să verific pe telefon coșul, plata și răspunsurile AI. Apoi să rulez build-ul și lint-ul din nou."
     }
   }
 }
