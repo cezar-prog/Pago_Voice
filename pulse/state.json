@@ -36,6 +36,12 @@
       "member": 2,
       "time": "16 noiembrie 2026, 23:37 (ora României)",
       "headline": "Merge-ul cu ramura principală este trimis, păstrăm coșul nostru și AI-ul trebuie să primească cheia"
+    },
+    {
+      "n": 7,
+      "member": 2,
+      "time": "17 noiembrie 2026, 01:37 (ora României)",
+      "headline": "Vizualizatorul de facturi și dicționarul de intenții sunt gata, iar conflictul cu mute-ul este rezolvat"
     }
   ],
   "members": {
@@ -52,13 +58,13 @@
       "next": "Pasul următor nu a fost formulat în această sesiune; pagina de progres este pasul curent."
     },
     "2": {
-      "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, un coș în care strângi mai multe facturi și o plată confirmată cu Face ID sau PIN.",
-      "works": "Coșul se umple și se golește prin voce sau text, iar ecranul de plată marchează facturile plătite și le actualizează pe ecranul principal. Ecranul de plată propriu rămâne, iar ecranul de plăți din ramura principală a fost scos. Textul aplicației, răspunsurile AI și promptul sunt în română. Conexiunea cu AI-ul trece prin /api/chat, iar comenzile de coș rămân locale. Eroarea de tip din adaptoare a fost corectată. Build-ul și lint-ul nu au fost reconfirmate după corecție.",
-      "blocking": "Lipsește fișierul .env.local cu cheia API, deci AI-ul nu răspunde încă. Node.js nu este accesibil din sesiunea mea, deci nu pot rula build-ul. Pe telefon, butoanele prin tunelul Cloudflare nu au fost confirmate. Partea de voce a colegului din ramura principală rămâne în proiect, dar nu este folosită.",
+      "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, un coș în care strângi mai multe facturi, o plată confirmată cu Face ID sau PIN și vizualizarea facturii în format PDF.",
+      "works": "Coșul și plata funcționează prin voce sau text. Vizualizatorul deschide pentru fiecare furnizor o factură de test, cu detalii specifice și totaluri care se potrivesc cu suma facturii. Recunoașterea intențiilor este într-un dicționar, iar răspunsurile sunt în română. Merge-ul cu ramura principală este făcut, iar funcția de mut din ramura principală a fost păstrată împreună cu vizualizatorul. Nimic din acestea nu a fost verificat cu npm run build sau lint după ultimele modificări.",
+      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu funcționează încă. Vizualizatorul de facturi nu a fost testat pe telefon. Logo-urile din facturi sunt marcaje generice, nu logo-uri reale.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română și conexiunea cu AI-ul."
+          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi și dicționarul de intenții."
         },
         {
           "name": "Documentația Next.js din proiect",
@@ -85,7 +91,7 @@
           "for": "Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă."
         }
       ],
-      "next": "Să adaug fișierul .env.local cu cheia API, să repornesc serverul și să verific pe telefon coșul, plata și răspunsurile AI. Apoi să rulez build-ul și lint-ul din nou."
+      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, apoi să testez pe telefon vizualizatorul de facturi, coșul și plata."
     }
   }
 }
