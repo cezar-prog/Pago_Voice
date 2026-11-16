@@ -1,3 +1,4 @@
+import { dispatchPayment } from "@/lib/payments/store";
 import { MOCK_BILLS } from "./bills";
 import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
@@ -56,7 +57,10 @@ export const defaultAdapters: AssistantAdapters = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: toApiMessages(input, history), bills: MOCK_BILLS }),
       });
-      const data = (await res.json()) as { reply?: unknown };
+      const data = (await res.json()) as { reply?: unknown; action?: unknown; billId?: unknown };
+      if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
+        dispatchPayment(data.billId, { type: "PREPARE" });
+      }
       return typeof data.reply === "string" && data.reply ? data.reply : FALLBACK_REPLY;
     } catch {
       return FALLBACK_REPLY;
