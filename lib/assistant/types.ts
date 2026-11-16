@@ -1,0 +1,54 @@
+export type BillStatus = "paid" | "due";
+
+export type BillCategory = "auto" | "house" | "utilities" | "telecom" | "other";
+
+export interface Bill {
+  id: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  /** ISO date, yyyy-mm-dd */
+  dueDate: string;
+  status: BillStatus;
+  category: BillCategory;
+}
+
+export type MessageRole = "user" | "assistant";
+
+export interface ChatMessage {
+  id: string;
+  role: MessageRole;
+  text: string;
+}
+
+/** What the orb is doing right now. */
+export type AssistantStatus = "idle" | "listening" | "thinking" | "speaking";
+
+export interface RecognizerHandlers {
+  /** Partial transcript while the user is still speaking (live interpretation). */
+  onInterim: (text: string) => void;
+  /** Final transcript once the user stopped speaking. */
+  onFinal: (text: string) => void;
+  onEnd: () => void;
+  onError: (error: string) => void;
+}
+
+export interface Recognizer {
+  start: () => void;
+  stop: () => void;
+}
+
+/**
+ * Pluggable services. The UI only talks to these, so the voice/AI work
+ * can replace any of them without touching the components.
+ */
+export interface AssistantAdapters {
+  /** Produce the assistant's answer for a user message. */
+  respond: (input: string, history: ChatMessage[]) => Promise<string>;
+  /** Read the answer aloud; call onDone when speech ends (or fails). */
+  speak: (text: string, onDone: () => void) => void;
+  cancelSpeech: () => void;
+  isVoiceSupported: () => boolean;
+  /** Return null when speech recognition is unavailable. */
+  createRecognizer: (handlers: RecognizerHandlers) => Recognizer | null;
+}
