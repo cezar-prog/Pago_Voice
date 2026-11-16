@@ -11,24 +11,24 @@ export interface ChatRequest {
   bills: Bill[];
 }
 
-const SYSTEM_PROMPT = `Esti Pago Voice, asistentul vocal al aplicatiei Pago pentru plata facturilor. Esti prietenos, cald si foarte concis.
+const SYSTEM_PROMPT = `You are Pago Voice, the assistant of the Pago app for paying bills. You are friendly and very concise.
 
-Reguli:
-- Raspunde intotdeauna in limba romana, strict fara diacritice (scrie a, i, s, t in loc de litere cu diacritice).
-- Maximum 2 propozitii scurte per raspuns. Raspunsul este citit cu voce tare, asa ca nu folosi liste, emoji, markdown sau simboluri speciale.
-- Cunosti doar facturile din lista primita mai jos. Nu inventa facturi, furnizori, sume sau date.
-- Cand utilizatorul intreaba de o factura, spune-i suma, data scadentei si nota, daca exista (de exemplu o regularizare la gaz), apoi intreaba-l daca vrea sa o pregatesti pentru plata cu cardul principal.
-- Spune sumele natural, de exemplu 142,50 lei, iar datele ca 15 decembrie.
-- Daca o factura este deja platita, spune asta si nu propune plata ei.
-- Daca intrebarea nu este clara sau se potrivesc mai multe facturi, cere o clarificare scurta.
+Rules:
+- Always answer in English.
+- Use at most 2 short sentences. Do not use lists, emoji or markdown.
+- You only know the bills listed below. Never invent bills, providers, amounts or dates.
+- Answer the user's question using the bill list: totals, comparisons (most or least expensive), due dates, paid or unpaid status, and details such as notes.
+- Amounts are in RON. Write amounts like 142.50 RON and dates like 15 December.
+- If a bill is already paid, say so and do not offer to pay it.
+- If the question is unclear or several bills match, ask a short clarifying question.
 
-Actiuni:
-- PREPARE_PAYMENT: doar cand utilizatorul confirma clar ca vrea sa plateasca sau sa pregateasca o anumita factura neplatita (de exemplu: da, da te rog, plateste-o, pregateste-o). Pune in billId id-ul exact al facturii din lista si confirma scurt in reply ca o pregatesti pe cardul principal.
-- CLOSE: cand utilizatorul isi ia la revedere sau multumeste si incheie conversatia. Raspunde cu un salut scurt.
-- NONE: in toate celelalte cazuri.
-- billId este null cand actiunea nu este PREPARE_PAYMENT.
+Actions:
+- PREPARE_PAYMENT: only when the user clearly asks to pay or prepare a specific unpaid bill (for example "pay Enel"). Put the exact bill id from the list in billId and confirm briefly in reply that you are preparing the payment on the main card.
+- CLOSE: when the user says goodbye or thanks you and ends the conversation. Reply with a short goodbye.
+- NONE: in all other cases.
+- billId must be null unless the action is PREPARE_PAYMENT.
 
-Formatul raspunsului: returneaza strict un obiect JSON valid, cu campurile reply (text), action (NONE, PREPARE_PAYMENT sau CLOSE) si billId (id-ul facturii sau null).`;
+Response format: return only a valid JSON object with the fields reply (text), action (NONE, PREPARE_PAYMENT or CLOSE) and billId (the bill id or null).`;
 
 export const RESPONSE_SCHEMA = {
   type: 'object',
@@ -40,10 +40,6 @@ export const RESPONSE_SCHEMA = {
   required: ['reply', 'action', 'billId'],
   additionalProperties: false,
 } as const;
-
-function stripDiacritics(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
 
 function isBill(value: unknown): value is Bill {
   if (!value || typeof value !== 'object') return false;
@@ -86,24 +82,24 @@ export function readChatRequest(body: unknown): ChatRequest | null {
 }
 
 function describeBills(bills: Bill[]): string {
-  if (!bills.length) return 'Utilizatorul nu are nicio factura in aplicatie.';
+  if (!bills.length) return 'The user has no bills in the app.';
   return bills
     .map((b) => {
       const parts = [
         `id: ${b.id}`,
-        `furnizor: ${b.provider}`,
-        `suma: ${b.amount.toFixed(2)} lei`,
-        `scadenta: ${b.dueDate}`,
-        `status: ${b.status === 'paid' ? 'platita' : 'neplatita'}`,
+        `provider: ${b.provider}`,
+        `amount: ${b.amount.toFixed(2)} RON`,
+        `due date: ${b.dueDate}`,
+        `status: ${b.status === 'paid' ? 'paid' : 'unpaid'}`,
       ];
-      if (b.note) parts.push(`nota: ${b.note}`);
+      if (b.note) parts.push(`note: ${b.note}`);
       return `- ${parts.join(' | ')}`;
     })
     .join('\n');
 }
 
 export function buildSystemPrompt(bills: Bill[], today: string): string {
-  return `${SYSTEM_PROMPT}\n\nData de azi: ${today}\n\nFacturile utilizatorului:\n${describeBills(bills)}`;
+  return `${SYSTEM_PROMPT}\n\nToday's date: ${today}\n\nThe user's bills:\n${describeBills(bills)}`;
 }
 
 export function parseAssistantReply(raw: string, bills: Bill[]): ChatReply | null {
@@ -116,7 +112,7 @@ export function parseAssistantReply(raw: string, bills: Bill[]): ChatReply | nul
   if (!parsed || typeof parsed !== 'object') return null;
   const data = parsed as Record<string, unknown>;
 
-  const reply = stripDiacritics(typeof data.reply === 'string' ? data.reply.trim() : '');
+  const reply = typeof data.reply === 'string' ? data.reply.trim() : '';
   if (!reply) return null;
 
   let action: VoiceAction =

@@ -33,9 +33,9 @@ function dispatchIfCurrent(billId: string, version: number, event: PaymentEvent)
 function runEffects(billId: string, entry: PaymentEntry): void {
   const { version } = entry;
   if (entry.state === "preparing") {
-    mockPrepare().then(
+    mockPrepare(billId).then(
       () => dispatchIfCurrent(billId, version, { type: "PREPARED" }),
-      () => dispatchIfCurrent(billId, version, { type: "FAILED", reason: "Pregatirea platii a esuat." }),
+      () => dispatchIfCurrent(billId, version, { type: "FAILED", reason: "Could not prepare the payment." }),
     );
   }
   if (entry.state === "processing") {
@@ -44,7 +44,7 @@ function runEffects(billId: string, entry: PaymentEntry): void {
       (error: unknown) =>
         dispatchIfCurrent(billId, version, {
           type: "FAILED",
-          reason: error instanceof Error ? error.message : "Plata a esuat.",
+          reason: error instanceof Error ? error.message : "Payment failed.",
         }),
     );
   }

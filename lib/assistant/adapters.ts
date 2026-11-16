@@ -2,9 +2,10 @@ import { dispatchPayment } from "@/lib/payments/store";
 import { MOCK_BILLS } from "./bills";
 import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
-const SPEECH_LANG = "ro-RO";
+const SPEECH_LANG = "en-US";
+const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
 const CHAT_ENDPOINT = "/api/chat";
-const FALLBACK_REPLY = "Scuze, nu pot raspunde acum. Incearca din nou.";
+const FALLBACK_REPLY = "Sorry, I cannot answer right now. Please try again.";
 
 function toApiMessages(input: string, history: ChatMessage[]) {
   const messages = history
@@ -68,7 +69,7 @@ export const defaultAdapters: AssistantAdapters = {
   },
 
   speak: (text, onDone) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
+    if (!VOICE_ENABLED || typeof window === "undefined" || !window.speechSynthesis) {
       onDone();
       return;
     }
@@ -84,7 +85,7 @@ export const defaultAdapters: AssistantAdapters = {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
   },
 
-  isVoiceSupported: () => getRecognitionCtor() !== null,
+  isVoiceSupported: () => VOICE_ENABLED && getRecognitionCtor() !== null,
 
   createRecognizer: (handlers: RecognizerHandlers) => {
     const Ctor = getRecognitionCtor();

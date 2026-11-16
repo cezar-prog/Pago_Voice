@@ -9,6 +9,11 @@ export const MOCK_BILLS: Bill[] = [
   { id: "b4", provider: "Apa Nova", amount: 62.3, currency: "RON", dueDate: "2026-11-10", status: "paid", category: "utilities" },
   { id: "b5", provider: "BT Home Loan", amount: 2100, currency: "RON", dueDate: "2026-11-25", status: "due", category: "house" },
   { id: "b6", provider: "Rovinieta", amount: 150, currency: "RON", dueDate: "2027-01-15", status: "due", category: "auto" },
+  { id: "b7", provider: "Orange", amount: 79.99, currency: "RON", dueDate: "2026-11-18", status: "due", category: "telecom" },
+  { id: "b8", provider: "Electrica", amount: 143.6, currency: "RON", dueDate: "2026-11-22", status: "due", category: "utilities" },
+  { id: "b9", provider: "Engie Gaz", amount: 312.4, currency: "RON", dueDate: "2026-11-28", status: "due", category: "utilities" },
+  { id: "b10", provider: "Asigurare locuinta", amount: 480, currency: "RON", dueDate: "2026-12-10", status: "due", category: "house" },
+  { id: "b11", provider: "Abonament sala", amount: 120, currency: "RON", dueDate: "2026-11-01", status: "paid", category: "other" },
 ];
 
 const CATEGORY_KEYWORDS: Record<Bill["category"], string[]> = {
