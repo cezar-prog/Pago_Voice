@@ -21,6 +21,15 @@ const CLEAR_PHRASES = ["goleste cosul", "goleste", "clear cart", "empty cart"];
 const REMOVE_WORDS = ["scoate", "elimina", "remove"];
 const ADD_WORDS = ["adauga", "pune in cos", "add to cart", "add"];
 const MONTH_PHRASES = ["luna asta", "luna aceasta", "this month"];
+const INVOICE_PHRASES = [
+  "vreau sa vad factura",
+  "vreau factura",
+  "vezi factura",
+  "arata factura",
+  "arata-mi factura",
+  "deschide factura",
+  "vad factura",
+];
 
 const includesAny = (text: string, words: string[]) => words.some((w) => text.includes(w));
 const hasWord = (text: string, words: string[]) =>
@@ -47,6 +56,7 @@ export function isCartCommand(input: string): boolean {
     includesAny(q, CLEAR_PHRASES) ||
     includesAny(q, REMOVE_WORDS) ||
     includesAny(q, ADD_WORDS) ||
+    includesAny(q, INVOICE_PHRASES) ||
     hasWord(q, ["cos", "cart"])
   );
 }
@@ -62,6 +72,14 @@ export function respondToCommand(input: string, c: AssistantCommands): string {
     }
     c.openCheckout();
     return `Deschid plata pentru ${facturi(c.paymentCart.length)}, în total ${formatRon(total(c.paymentCart))}.`;
+  }
+
+  if (includesAny(q, INVOICE_PHRASES)) {
+    // "deschide factura la Enel", "vreau să văd factura Digi": match the company name.
+    const bill = c.bills.find((b) => q.includes(normalizeSpeech(b.provider)));
+    if (!bill) return "Care factură vrei să o deschid? Spune, de exemplu, factura Enel.";
+    c.openInvoice(bill);
+    return `Deschid factura pentru ${bill.provider}.`;
   }
 
   if (includesAny(q, CLEAR_PHRASES)) {

@@ -12,6 +12,7 @@ import {
 import { Mic, MicOff, Send, X } from "lucide-react";
 import { useAssistant } from "./assistant-provider";
 import { CartPill, CheckoutScreen } from "./checkout";
+import { InvoiceViewerModal } from "./invoice-viewer";
 import { useMicMeter } from "./use-mic-meter";
 import {
   GOOD_FROM,
@@ -27,7 +28,7 @@ const VIOLET = "#8b5cf6";
 
 /** Entry point: the bottom launcher button plus the full-screen assistant overlay. */
 export function AiAssistant() {
-  const { isOpen, open, checkoutOpen } = useAssistant();
+  const { isOpen, open, checkoutOpen, viewingInvoice } = useAssistant();
 
   return (
     <>
@@ -51,6 +52,10 @@ export function AiAssistant() {
       <AnimatePresence>{isOpen && <AssistantOverlay />}</AnimatePresence>
 
       <AnimatePresence>{checkoutOpen && <CheckoutScreen key="checkout" />}</AnimatePresence>
+
+      <AnimatePresence>
+        {viewingInvoice && <InvoiceViewerModal key="invoice" bill={viewingInvoice} />}
+      </AnimatePresence>
     </>
   );
 }
