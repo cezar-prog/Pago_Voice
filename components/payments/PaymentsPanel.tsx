@@ -14,31 +14,31 @@ const SECONDARY = `${BUTTON} bg-slate-200 text-slate-900 dark:bg-slate-800 dark:
 
 function StatusAction({ bill, entry }: { bill: Bill; entry: PaymentEntry }) {
   if (bill.status === "paid" || entry.state === "paid") {
-    return <span className="text-sm font-semibold text-emerald-600">Platita</span>;
+    return <span className="text-sm font-semibold text-emerald-600">Paid</span>;
   }
 
   switch (entry.state) {
     case "idle":
       return (
         <button type="button" className={PRIMARY} onClick={() => dispatchPayment(bill.id, { type: "PREPARE" })}>
-          Plateste
+          Pay
         </button>
       );
     case "preparing":
-      return <span className="text-sm opacity-70">Se pregateste...</span>;
+      return <span className="text-sm opacity-70">Preparing...</span>;
     case "confirming":
       return (
         <div className="flex gap-2">
           <button type="button" className={PRIMARY} onClick={() => dispatchPayment(bill.id, { type: "CONFIRM" })}>
-            Confirma
+            Confirm
           </button>
           <button type="button" className={SECONDARY} onClick={() => dispatchPayment(bill.id, { type: "CANCEL" })}>
-            Anuleaza
+            Cancel
           </button>
         </div>
       );
     case "processing":
-      return <span className="text-sm opacity-70">Se proceseaza...</span>;
+      return <span className="text-sm opacity-70">Processing...</span>;
     case "failed":
       return (
         <div className="flex flex-col items-end gap-2">
@@ -46,16 +46,16 @@ function StatusAction({ bill, entry }: { bill: Bill; entry: PaymentEntry }) {
             {entry.error}
           </span>
           <button type="button" className={PRIMARY} onClick={() => dispatchPayment(bill.id, { type: "RETRY" })}>
-            Reincearca
+            Retry
           </button>
         </div>
       );
     case "cancelled":
       return (
         <div className="flex items-center gap-2">
-          <span className="text-sm opacity-70">Anulata</span>
+          <span className="text-sm opacity-70">Cancelled</span>
           <button type="button" className={SECONDARY} onClick={() => dispatchPayment(bill.id, { type: "PREPARE" })}>
-            Reia
+            Resume
           </button>
         </div>
       );
@@ -67,7 +67,7 @@ export function PaymentsPanel() {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Facturi</h2>
+      <h2 className="text-lg font-semibold">Bills</h2>
       <ul className="space-y-3">
         {MOCK_BILLS.map((bill) => {
           const entry = snapshot[bill.id] ?? getPaymentEntry(bill.id);
