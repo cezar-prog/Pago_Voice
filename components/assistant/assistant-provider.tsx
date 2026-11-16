@@ -41,6 +41,8 @@ interface AssistantContextValue {
   open: () => void;
   close: () => void;
   toggleMic: () => void;
+  isAssistantMuted: boolean;
+  toggleAssistantMute: () => void;
   sendText: (text: string) => void;
   /** Call on user typing so the idle timer resets. */
   noteActivity: () => void;
@@ -74,6 +76,8 @@ export function AssistantProvider({
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [micOn, setMicOn] = useState(false);
+  const [isAssistantMuted, setIsAssistantMuted] = useState(false);
+  const mutedRef = useRef(false);
   const [busy, setBusy] = useState<Busy>("idle");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [liveTranscript, setLiveTranscript] = useState("");
@@ -205,6 +209,11 @@ export function AssistantProvider({
       if (turn !== turnRef.current) return;
 
       pushMessage("assistant", reply);
+      if (mutedRef.current) {
+        setBusy("idle");
+        setLastActivity(Date.now());
+        return;
+      }
       setBusy("speaking");
       adaptersRef.current.speak(reply, () => {
         if (turn !== turnRef.current) return;
@@ -230,6 +239,19 @@ export function AssistantProvider({
   }, []);
 
   const noteActivity = useCallback(() => setLastActivity(Date.now()), []);
+
+  // Mutes the assistant's voice. Muting mid-speech stops the audio at once and frees the UI.
+  const toggleAssistantMute = useCallback(() => {
+    const next = !mutedRef.current;
+    mutedRef.current = next;
+    setIsAssistantMuted(next);
+    if (next) {
+      // Pause, don't discard: unmuting continues the same reply.
+      if (adaptersRef.current.pauseSpeech()) setBusy((b) => (b === "speaking" ? "idle" : b));
+    } else if (adaptersRef.current.resumeSpeech()) {
+      setBusy("speaking");
+    }
+  }, []);
 
   // Microphone: listen only while open, mic enabled, the assistant is not busy and
   // checkout is not open (so it never transcribes its own answer or the payment screen).
@@ -289,6 +311,8 @@ export function AssistantProvider({
       isOpen,
       expanded,
       micOn,
+      isAssistantMuted,
+      toggleAssistantMute,
       voiceSupported,
       voiceError,
       status,
@@ -313,6 +337,8 @@ export function AssistantProvider({
       isOpen,
       expanded,
       micOn,
+      isAssistantMuted,
+      toggleAssistantMute,
       voiceSupported,
       voiceError,
       status,
