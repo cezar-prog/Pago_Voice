@@ -38,13 +38,40 @@ export interface Recognizer {
   stop: () => void;
 }
 
+/** A bill selected for the payment cart. */
+export interface CartBill {
+  id: string;
+  providerName: string;
+  amount: number;
+  /** ISO date, yyyy-mm-dd */
+  dueDate: string;
+}
+
+/**
+ * What the AI backend can read and trigger. The provider builds this for every
+ * user message and passes it to `respond`, so voice/AI code calls these methods
+ * instead of touching state.
+ */
+export interface AssistantCommands {
+  bills: Bill[];
+  paymentCart: CartBill[];
+  addBillToCart: (bill: CartBill) => void;
+  removeBillFromCart: (billId: string) => void;
+  clearCart: () => void;
+  openCheckout: () => void;
+}
+
 /**
  * Pluggable services. The UI only talks to these, so the voice/AI work
  * can replace any of them without touching the components.
  */
 export interface AssistantAdapters {
-  /** Produce the assistant's answer for a user message. */
-  respond: (input: string, history: ChatMessage[]) => Promise<string>;
+  /** Produce the assistant's answer for a user message, and may trigger `commands`. */
+  respond: (
+    input: string,
+    history: ChatMessage[],
+    commands: AssistantCommands,
+  ) => Promise<string>;
   /** Read the answer aloud; call onDone when speech ends (or fails). */
   speak: (text: string, onDone: () => void) => void;
   cancelSpeech: () => void;

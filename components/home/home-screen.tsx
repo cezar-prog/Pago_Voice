@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentType } from "react";
 import {
   Bell,
@@ -15,7 +17,7 @@ import {
   Home,
   type LucideProps,
 } from "lucide-react";
-import { MOCK_BILLS } from "@/lib/assistant/bills";
+import { useAssistant } from "@/components/assistant/assistant-provider";
 import type { Bill, BillCategory } from "@/lib/assistant/types";
 
 const CATEGORY_ICON: Record<BillCategory, ComponentType<LucideProps>> = {
@@ -40,10 +42,12 @@ const formatDate = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 export function HomeScreen() {
-  const dueBills = MOCK_BILLS.filter((b) => b.status === "due").sort((a, b) =>
+  // Bills come from the shared assistant state, so paying in checkout updates this list.
+  const { bills } = useAssistant();
+  const dueBills = bills.filter((b) => b.status === "due").sort((a, b) =>
     a.dueDate.localeCompare(b.dueDate),
   );
-  const paidBills = MOCK_BILLS.filter((b) => b.status === "paid");
+  const paidBills = bills.filter((b) => b.status === "paid");
   const totalDue = dueBills.reduce((sum, b) => sum + b.amount, 0);
 
   return (

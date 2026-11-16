@@ -23,6 +23,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      // Browser extensions (remote-control/inspector tools) add attributes to <html>
+      // before React loads. Ignore that mismatch so the page still hydrates.
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

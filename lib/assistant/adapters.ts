@@ -1,4 +1,4 @@
-import { answerBillQuestion } from "./bills";
+import { respondToCommand } from "./commands";
 import type { AssistantAdapters, RecognizerHandlers } from "./types";
 
 const SPEECH_LANG = "ro-RO";
@@ -36,9 +36,9 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
 
 /** Default, browser-only adapters. The voice/AI branch can replace these. */
 export const defaultAdapters: AssistantAdapters = {
-  respond: async (input) => {
+  respond: async (input, _history, commands) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    return answerBillQuestion(input);
+    return respondToCommand(input, commands);
   },
 
   speak: (text, onDone) => {

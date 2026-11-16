@@ -11,6 +11,7 @@ import {
 } from "framer-motion";
 import { Mic, MicOff, Send, X } from "lucide-react";
 import { useAssistant } from "./assistant-provider";
+import { CartPill, CheckoutScreen } from "./checkout";
 import { useMicMeter } from "./use-mic-meter";
 import {
   GOOD_FROM,
@@ -26,10 +27,12 @@ const VIOLET = "#8b5cf6";
 
 /** Entry point: the bottom launcher button plus the full-screen assistant overlay. */
 export function AiAssistant() {
-  const { isOpen, open } = useAssistant();
+  const { isOpen, open, checkoutOpen } = useAssistant();
 
   return (
     <>
+      <CartPill />
+
       {!isOpen && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center">
           <motion.button
@@ -38,7 +41,7 @@ export function AiAssistant() {
             onClick={open}
             aria-label="Open Pago AI assistant"
             whileTap={{ scale: 0.94 }}
-            className="pointer-events-auto h-16 w-16"
+            className="pointer-events-auto relative z-10 h-16 w-16 touch-manipulation"
           >
             <SiriOrb status="idle" />
           </motion.button>
@@ -46,6 +49,8 @@ export function AiAssistant() {
       )}
 
       <AnimatePresence>{isOpen && <AssistantOverlay />}</AnimatePresence>
+
+      <AnimatePresence>{checkoutOpen && <CheckoutScreen key="checkout" />}</AnimatePresence>
     </>
   );
 }
@@ -231,7 +236,7 @@ function SiriOrb({
           <motion.span
             key={i}
             aria-hidden
-            className="absolute inset-0 rounded-full border"
+            className="pointer-events-none absolute inset-0 rounded-full border"
             style={{ borderColor: i ? `${CYAN}55` : `${VIOLET}55` }}
             initial={{ scale: 1, opacity: 0.8 }}
             animate={{ scale: speaking ? 1.5 : 1.9, opacity: 0 }}
@@ -248,7 +253,7 @@ function SiriOrb({
       {thinking && (
         <motion.span
           aria-hidden
-          className="absolute inset-[-5%] rounded-full border border-dashed"
+          className="pointer-events-none absolute inset-[-5%] rounded-full border border-dashed"
           style={{ borderColor: `${CYAN}88` }}
           animate={{ rotate: 360 }}
           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
@@ -260,7 +265,7 @@ function SiriOrb({
         className="relative h-full w-full overflow-hidden rounded-full bg-black ring-1 ring-white/10"
         style={{ boxShadow: `0 0 28px ${VIOLET}33, inset 0 0 24px ${PAGO_BLUE}22` }}
       >
-        <svg viewBox="0 0 200 200" className="absolute inset-0 h-full w-full" aria-hidden="true">
+        <svg viewBox="0 0 200 200" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
           <defs>
             <linearGradient id="pago-ribbon-a" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0">
               <stop offset="0%" stopColor={VIOLET} />

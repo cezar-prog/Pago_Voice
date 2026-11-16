@@ -11,10 +11,14 @@ import {
   type ReactNode,
 } from "react";
 import { defaultAdapters } from "@/lib/assistant/adapters";
+import { MOCK_BILLS } from "@/lib/assistant/bills";
 import { isClosePhrase } from "@/lib/assistant/text";
 import type {
   AssistantAdapters,
+  AssistantCommands,
   AssistantStatus,
+  Bill,
+  CartBill,
   ChatMessage,
 } from "@/lib/assistant/types";
 
@@ -40,6 +44,19 @@ interface AssistantContextValue {
   sendText: (text: string) => void;
   /** Call on user typing so the idle timer resets. */
   noteActivity: () => void;
+
+  /** All bills, with `status` updated when a payment is confirmed. */
+  bills: Bill[];
+  /** Bills selected for paying together. */
+  paymentCart: CartBill[];
+  addBillToCart: (bill: CartBill) => void;
+  removeBillFromCart: (billId: string) => void;
+  clearCart: () => void;
+  checkoutOpen: boolean;
+  openCheckout: () => void;
+  closeCheckout: () => void;
+  /** Marks every bill in the cart as paid and empties the cart. */
+  confirmPayment: () => void;
 }
 
 const AssistantContext = createContext<AssistantContextValue | null>(null);
@@ -64,10 +81,15 @@ export function AssistantProvider({
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [lastActivity, setLastActivity] = useState(0);
   const [micTick, setMicTick] = useState(0);
+  const [bills, setBills] = useState<Bill[]>(() => MOCK_BILLS.map((b) => ({ ...b })));
+  const [paymentCart, setPaymentCart] = useState<CartBill[]>([]);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Refs mirror state where async callbacks need the latest value.
   const isOpenRef = useRef(false);
   const messagesRef = useRef<ChatMessage[]>([]);
+  const billsRef = useRef<Bill[]>(bills);
+  const cartRef = useRef<CartBill[]>([]);
   /** Incremented on every new turn/session; stale async work checks it and bails. */
   const turnRef = useRef(0);
   const handleUtteranceRef = useRef<(text: string) => Promise<void>>(async () => {});
@@ -114,6 +136,45 @@ export function AssistantProvider({
     setLastActivity(Date.now());
   }, []);
 
+  // ---- Payment cart ------------------------------------------------------
+
+  const addBillToCart = useCallback((bill: CartBill) => {
+    const stored = billsRef.current.find((b) => b.id === bill.id);
+    if (stored?.status === "paid") return;
+    if (cartRef.current.some((b) => b.id === bill.id)) return;
+    cartRef.current = [...cartRef.current, bill];
+    setPaymentCart(cartRef.current);
+  }, []);
+
+  const removeBillFromCart = useCallback((billId: string) => {
+    cartRef.current = cartRef.current.filter((b) => b.id !== billId);
+    setPaymentCart(cartRef.current);
+  }, []);
+
+  const clearCart = useCallback(() => {
+    cartRef.current = [];
+    setPaymentCart([]);
+  }, []);
+
+  const openCheckout = useCallback(() => {
+    if (cartRef.current.length === 0) return;
+    setCheckoutOpen(true);
+  }, []);
+
+  const closeCheckout = useCallback(() => setCheckoutOpen(false), []);
+
+  const confirmPayment = useCallback(() => {
+    const paidIds = new Set(cartRef.current.map((b) => b.id));
+    billsRef.current = billsRef.current.map((b) =>
+      paidIds.has(b.id) ? { ...b, status: "paid" } : b,
+    );
+    setBills(billsRef.current);
+    cartRef.current = [];
+    setPaymentCart([]);
+  }, []);
+
+  // ---- Conversation ------------------------------------------------------
+
   const handleUtterance = useCallback(
     async (raw: string) => {
       const text = raw.trim();
@@ -132,7 +193,15 @@ export function AssistantProvider({
       setBusy("thinking");
       pushMessage("user", text);
 
-      const reply = await adaptersRef.current.respond(text, messagesRef.current);
+      const commands: AssistantCommands = {
+        bills: billsRef.current,
+        paymentCart: cartRef.current,
+        addBillToCart,
+        removeBillFromCart,
+        clearCart,
+        openCheckout,
+      };
+      const reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
       if (turn !== turnRef.current) return;
 
       pushMessage("assistant", reply);
@@ -143,7 +212,7 @@ export function AssistantProvider({
         setLastActivity(Date.now());
       });
     },
-    [close, pushMessage],
+    [close, pushMessage, addBillToCart, removeBillFromCart, clearCart, openCheckout],
   );
 
   useEffect(() => {
@@ -162,11 +231,11 @@ export function AssistantProvider({
 
   const noteActivity = useCallback(() => setLastActivity(Date.now()), []);
 
-  // Microphone: listen only while open, mic enabled and the assistant is not busy
-  // (so it never transcribes its own spoken answer). Re-runs on `micTick` to restart
-  // after the browser ends a session on silence.
+  // Microphone: listen only while open, mic enabled, the assistant is not busy and
+  // checkout is not open (so it never transcribes its own answer or the payment screen).
+  // Re-runs on `micTick` to restart after the browser ends a session on silence.
   useEffect(() => {
-    if (!isOpen || !micOn || busy !== "idle") return;
+    if (!isOpen || !micOn || busy !== "idle" || checkoutOpen) return;
 
     let active = true;
     const recognizer = adaptersRef.current.createRecognizer({
@@ -202,14 +271,15 @@ export function AssistantProvider({
       active = false;
       recognizer.stop();
     };
-  }, [isOpen, micOn, busy, micTick]);
+  }, [isOpen, micOn, busy, micTick, checkoutOpen]);
 
-  // Idle timeout: close after 10 s with no activity (not while the assistant is working).
+  // Idle timeout: close after 10 s with no activity (not while the assistant is working
+  // or while the checkout screen is open).
   useEffect(() => {
-    if (!isOpen || busy !== "idle") return;
+    if (!isOpen || busy !== "idle" || checkoutOpen) return;
     const id = window.setTimeout(close, IDLE_TIMEOUT_MS);
     return () => window.clearTimeout(id);
-  }, [isOpen, busy, lastActivity, close]);
+  }, [isOpen, busy, lastActivity, checkoutOpen, close]);
 
   const status: AssistantStatus =
     busy !== "idle" ? busy : micOn ? "listening" : "idle";
@@ -229,6 +299,15 @@ export function AssistantProvider({
       toggleMic,
       sendText,
       noteActivity,
+      bills,
+      paymentCart,
+      addBillToCart,
+      removeBillFromCart,
+      clearCart,
+      checkoutOpen,
+      openCheckout,
+      closeCheckout,
+      confirmPayment,
     }),
     [
       isOpen,
@@ -244,6 +323,15 @@ export function AssistantProvider({
       toggleMic,
       sendText,
       noteActivity,
+      bills,
+      paymentCart,
+      addBillToCart,
+      removeBillFromCart,
+      clearCart,
+      checkoutOpen,
+      openCheckout,
+      closeCheckout,
+      confirmPayment,
     ],
   );
 
