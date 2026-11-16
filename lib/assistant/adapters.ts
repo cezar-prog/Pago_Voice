@@ -9,6 +9,8 @@ const CHAT_ENDPOINT = "/api/chat";
 
 let ttsToken = 0;
 let currentAudio: HTMLAudioElement | null = null;
+let speechActive = false;
+let speechPaused = false;
 
 function toApiMessages(input: string, history: ChatMessage[]) {
   const messages = history
@@ -99,6 +101,7 @@ export const defaultAdapters: AssistantAdapters = {
       return;
     }
     const token = ++ttsToken;
+    speechActive = true;
     fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -115,22 +118,44 @@ export const defaultAdapters: AssistantAdapters = {
         const done = () => {
           URL.revokeObjectURL(audio.src);
           if (currentAudio === audio) currentAudio = null;
-          if (token === ttsToken) onDone();
+          if (token !== ttsToken) return;
+          speechActive = false;
+          onDone();
         };
         audio.onended = done;
         audio.onerror = done;
         audio.volume = 0.235;
+        if (speechPaused) return; // Muted while loading: starts when resumed.
         audio.play().catch(done);
       })
       .catch(() => {
-        if (token === ttsToken) onDone();
+        if (token !== ttsToken) return;
+        speechActive = false;
+        onDone();
       });
   },
 
   cancelSpeech: () => {
     ttsToken++;
+    speechActive = false;
+    speechPaused = false;
     currentAudio?.pause();
     currentAudio = null;
+  },
+
+  pauseSpeech: () => {
+    speechPaused = true;
+    currentAudio?.pause();
+    return speechActive;
+  },
+
+  resumeSpeech: () => {
+    speechPaused = false;
+    if (currentAudio) {
+      const audio = currentAudio;
+      audio.play().catch(() => audio.onerror?.(new Event("error")));
+    }
+    return speechActive;
   },
 
   isVoiceSupported: () => VOICE_ENABLED && getRecognitionCtor() !== null,
