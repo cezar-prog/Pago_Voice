@@ -3,7 +3,7 @@ import { MOCK_BILLS } from "./bills";
 import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
 const SPEECH_LANG = "en-US";
-const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED === "true";
+const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
 const CHAT_ENDPOINT = "/api/chat";
 const FALLBACK_REPLY = "Sorry, I cannot answer right now. Please try again.";
 
