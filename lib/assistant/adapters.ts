@@ -1,11 +1,11 @@
-import { dispatchPayment } from "@/lib/payments/store";
-import { MOCK_BILLS } from "./bills";
+import { isCartCommand, respondToCommand } from "./commands";
+import type { ChatReply } from "@/lib/types";
 import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
-const SPEECH_LANG = "en-US";
+// Romanian: the app UI, speech recognition and synthesis are all in Romanian.
+const SPEECH_LANG = "ro-RO";
 const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
 const CHAT_ENDPOINT = "/api/chat";
-const FALLBACK_REPLY = "Sorry, I cannot answer right now. Please try again.";
 
 function toApiMessages(input: string, history: ChatMessage[]) {
   const messages = history
@@ -49,23 +49,45 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-/** Default, browser-only adapters. The voice/AI branch can replace these. */
+/**
+ * Default adapters. Answers come from the AI endpoint (/api/chat). Cart and checkout
+ * commands are handled locally, and the local Romanian answers are the fallback when
+ * the AI is not connected or fails.
+ */
 export const defaultAdapters: AssistantAdapters = {
-  respond: async (input, history) => {
+  respond: async (input, history, commands) => {
+    if (isCartCommand(input)) return respondToCommand(input, commands);
+
     try {
       const res = await fetch(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: toApiMessages(input, history), bills: MOCK_BILLS }),
+        body: JSON.stringify({
+          messages: toApiMessages(input, history),
+          bills: commands.bills,
+        }),
       });
-      const data = (await res.json()) as { reply?: unknown; action?: unknown; billId?: unknown };
+      if (!res.ok) throw new Error(`chat ${res.status}`);
+
+      const data = (await res.json()) as Partial<ChatReply>;
+
+      // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
       if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
-        dispatchPayment(data.billId, { type: "PREPARE" });
+        const bill = commands.bills.find((b) => b.id === data.billId);
+        if (bill && bill.status === "due") {
+          commands.addBillToCart({
+            id: bill.id,
+            providerName: bill.provider,
+            amount: bill.amount,
+            dueDate: bill.dueDate,
+          });
+        }
       }
-      return typeof data.reply === "string" && data.reply ? data.reply : FALLBACK_REPLY;
+      if (typeof data.reply === "string" && data.reply) return data.reply;
     } catch {
-      return FALLBACK_REPLY;
+      // AI not connected or failed: answer from the local bill data below.
     }
+    return respondToCommand(input, commands);
   },
 
   speak: (text, onDone) => {
@@ -75,6 +97,11 @@ export const defaultAdapters: AssistantAdapters = {
     }
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = SPEECH_LANG;
+    // Prefer an installed Romanian voice; fall back to the browser default.
+    const roVoice = window.speechSynthesis
+      .getVoices()
+      .find((v) => v.lang.toLowerCase().startsWith("ro"));
+    if (roVoice) utterance.voice = roVoice;
     utterance.onend = onDone;
     utterance.onerror = onDone;
     window.speechSynthesis.cancel();

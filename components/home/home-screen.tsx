@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentType } from "react";
 import {
   Bell,
@@ -15,7 +17,8 @@ import {
   Home,
   type LucideProps,
 } from "lucide-react";
-import { MOCK_BILLS } from "@/lib/assistant/bills";
+import { useAssistant } from "@/components/assistant/assistant-provider";
+import { CATEGORY_LABEL_RO, formatDateRo, formatRon } from "@/lib/assistant/format";
 import type { Bill, BillCategory } from "@/lib/assistant/types";
 
 const CATEGORY_ICON: Record<BillCategory, ComponentType<LucideProps>> = {
@@ -27,24 +30,21 @@ const CATEGORY_ICON: Record<BillCategory, ComponentType<LucideProps>> = {
 };
 
 const QUICK_ACTIONS: { label: string; icon: ComponentType<LucideProps> }[] = [
-  { label: "Pay", icon: CreditCard },
-  { label: "Send", icon: Send },
-  { label: "Top up", icon: Plus },
-  { label: "Scan", icon: ScanLine },
+  { label: "Plătește", icon: CreditCard },
+  { label: "Trimite", icon: Send },
+  { label: "Reîncarcă", icon: Plus },
+  { label: "Scanează", icon: ScanLine },
 ];
 
-const formatAmount = (amount: number) =>
-  amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const formatDate = (iso: string) =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
 export function HomeScreen() {
-  const dueBills = MOCK_BILLS.filter((b) => b.status === "due").sort((a, b) =>
+  // Bills come from the shared assistant state, so paying in checkout updates this list.
+  const { bills } = useAssistant();
+  const dueBills = bills.filter((b) => b.status === "due").sort((a, b) =>
     a.dueDate.localeCompare(b.dueDate),
   );
-  const paidBills = MOCK_BILLS.filter((b) => b.status === "paid");
+  const paidBills = bills.filter((b) => b.status === "paid");
   const totalDue = dueBills.reduce((sum, b) => sum + b.amount, 0);
+  const totalPaid = paidBills.reduce((sum, b) => sum + b.amount, 0);
 
   return (
     <div className="min-h-dvh w-full bg-zinc-100 text-zinc-900">
@@ -56,13 +56,13 @@ export function HomeScreen() {
               CG
             </div>
             <div>
-              <p className="text-xs text-zinc-500">Good morning</p>
+              <p className="text-xs text-zinc-500">Bună dimineața</p>
               <p className="text-base font-semibold">Cezar</p>
             </div>
           </div>
           <button
             type="button"
-            aria-label="Notifications"
+            aria-label="Notificări"
             className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
           >
             <Bell className="h-5 w-5 text-zinc-700" />
@@ -75,24 +75,22 @@ export function HomeScreen() {
           <div className="rounded-3xl bg-gradient-to-br from-violet-600 via-violet-700 to-indigo-800 p-5 text-white shadow-lg">
             <div className="flex items-center justify-between text-sm text-white/80">
               <span className="flex items-center gap-2">
-                <Wallet className="h-4 w-4" /> Bills due
+                <Wallet className="h-4 w-4" /> Facturi de plătit
               </span>
-              <span>{dueBills.length} open</span>
+              <span>{dueBills.length} deschise</span>
             </div>
             <p className="mt-3 text-3xl font-semibold tracking-tight">
-              {formatAmount(totalDue)} <span className="text-lg font-normal text-white/70">RON</span>
+              {formatRon(totalDue)}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-2xl bg-white/10 p-3">
-                <p className="text-white/70">Paid this month</p>
-                <p className="mt-1 text-sm font-semibold">
-                  {formatAmount(paidBills.reduce((s, b) => s + b.amount, 0))} RON
-                </p>
+                <p className="text-white/70">Plătit luna aceasta</p>
+                <p className="mt-1 text-sm font-semibold">{formatRon(totalPaid)}</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-3">
-                <p className="text-white/70">Next due</p>
+                <p className="text-white/70">Următoarea scadență</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {dueBills[0] ? `${dueBills[0].provider} · ${formatDate(dueBills[0].dueDate)}` : "—"}
+                  {dueBills[0] ? `${dueBills[0].provider} · ${formatDateRo(dueBills[0].dueDate)}` : "—"}
                 </p>
               </div>
             </div>
@@ -114,9 +112,9 @@ export function HomeScreen() {
         {/* Bills */}
         <section className="px-5 pt-8">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Upcoming bills</h2>
+            <h2 className="text-base font-semibold">Facturi viitoare</h2>
             <button type="button" className="text-sm font-medium text-violet-600">
-              See all
+              Vezi toate
             </button>
           </div>
           <ul className="flex flex-col gap-2">
@@ -144,19 +142,17 @@ function BillRow({ bill }: { bill: Bill }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{bill.provider}</p>
         <p className="text-xs text-zinc-500">
-          {paid ? "Paid" : `Due ${formatDate(bill.dueDate)}`} · {bill.category}
+          {paid ? "Plătită" : `Scadentă ${formatDateRo(bill.dueDate)}`} · {CATEGORY_LABEL_RO[bill.category]}
         </p>
       </div>
       <div className="text-right">
-        <p className="text-sm font-semibold">
-          {formatAmount(bill.amount)} <span className="text-xs font-normal text-zinc-500">{bill.currency}</span>
-        </p>
+        <p className="text-sm font-semibold">{formatRon(bill.amount)}</p>
         <span
           className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
             paid ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
           }`}
         >
-          {paid ? "Paid" : "Due"}
+          {paid ? "Plătită" : "De plătit"}
         </span>
       </div>
     </li>
@@ -167,14 +163,14 @@ function BillRow({ bill }: { bill: Bill }) {
 function BottomNav() {
   return (
     <nav
-      aria-label="Main navigation"
+      aria-label="Navigare principală"
       className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-20 max-w-md items-center justify-around border-t border-zinc-200 bg-white/95 px-6 pb-2 backdrop-blur-md"
     >
-      <NavItem icon={Home} label="Home" active />
-      <NavItem icon={Wallet} label="Wallet" />
+      <NavItem icon={Home} label="Acasă" active />
+      <NavItem icon={Wallet} label="Portofel" />
       <div className="w-16" aria-hidden />
-      <NavItem icon={Receipt} label="Bills" />
-      <NavItem icon={User} label="Profile" />
+      <NavItem icon={Receipt} label="Facturi" />
+      <NavItem icon={User} label="Profil" />
     </nav>
   );
 }

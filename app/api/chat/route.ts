@@ -10,13 +10,13 @@ import {
 } from '@/lib/chat/assistant';
 import { askGemini } from '@/lib/chat/gemini';
 
-const FALLBACK_REPLY = 'Sorry, something went wrong. Please try again.';
-const NOT_UNDERSTOOD = 'Sorry, I did not understand. Could you repeat?';
-const REFUSAL_REPLY = 'Sorry, I cannot help with that. I can help with your bills.';
+const FALLBACK_REPLY = 'Ceva nu a mers. Te rog încearcă din nou.';
+const NOT_UNDERSTOOD = 'Nu am înțeles. Poți repeta?';
+const REFUSAL_REPLY = 'Nu te pot ajuta cu asta. Te pot ajuta cu facturile tale.';
 const KEY_REJECTED_REPLY =
-  'The AI rejected the API key. Check the key and its line in .env.local, then restart the server.';
+  'AI-ul a respins cheia API. Verifică cheia din .env.local și repornește serverul.';
 const NOT_CONNECTED_REPLY =
-  'The AI is not connected. Add GEMINI_API_KEY or ANTHROPIC_API_KEY to .env.local and restart the server.';
+  'AI-ul nu este conectat. Adaugă GEMINI_API_KEY sau ANTHROPIC_API_KEY în .env.local și repornește serverul.';
 
 type Provider = 'gemini' | 'anthropic' | 'none';
 
@@ -61,11 +61,11 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return failure('The request is not valid.', 400);
+    return failure('Cererea nu este validă.', 400);
   }
 
   const input = readChatRequest(body);
-  if (!input) return failure('No question received.', 400);
+  if (!input) return failure('Nu am primit nicio întrebare.', 400);
 
   const provider = pickProvider();
   if (provider === 'none') return failure(NOT_CONNECTED_REPLY, 503);
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     return parsed ? reply(parsed) : failure(NOT_UNDERSTOOD, 200);
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) {
-      return failure('The service is busy. Please try again in a few seconds.', 429);
+      return failure('Serviciul este ocupat. Încearcă din nou peste câteva secunde.', 429);
     }
     const status = typeof (error as { status?: unknown })?.status === 'number' ? (error as { status: number }).status : 0;
     console.error(`Pago Voice ${provider} error`, status, error instanceof Error ? error.message : error);

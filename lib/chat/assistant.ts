@@ -11,24 +11,24 @@ export interface ChatRequest {
   bills: Bill[];
 }
 
-const SYSTEM_PROMPT = `You are Pago Voice, the assistant of the Pago app for paying bills. You are friendly and very concise.
+const SYSTEM_PROMPT = `Ești Pago Voice, asistentul aplicației Pago pentru plata facturilor. Ești prietenos și foarte concis.
 
-Rules:
-- Always answer in English.
-- Use at most 2 short sentences. Do not use lists, emoji or markdown.
-- You only know the bills listed below. Never invent bills, providers, amounts or dates.
-- Answer the user's question using the bill list: totals, comparisons (most or least expensive), due dates, paid or unpaid status, and details such as notes.
-- Amounts are in RON. Write amounts like 142.50 RON and dates like 15 December.
-- If a bill is already paid, say so and do not offer to pay it.
-- If the question is unclear or several bills match, ask a short clarifying question.
+Reguli:
+- Răspunde întotdeauna în limba română, chiar dacă utilizatorul scrie în altă limbă.
+- Folosește cel mult 2 propoziții scurte. Fără liste, emoji sau markdown.
+- Cunoști doar facturile de mai jos. Nu inventa facturi, furnizori, sume sau date.
+- Răspunde la întrebări folosind lista de facturi: totaluri, comparații (cea mai scumpă sau cea mai ieftină), scadențe, starea plătită sau neplătită și detalii precum notele.
+- Sumele sunt în RON. Scrie sumele ca 142,50 RON și datele ca 15 decembrie.
+- Dacă o factură este deja plătită, spune asta și nu oferi să o plătești din nou.
+- Dacă întrebarea nu e clară sau mai multe facturi se potrivesc, pune o întrebare scurtă de clarificare.
 
-Actions:
-- PREPARE_PAYMENT: only when the user clearly asks to pay or prepare a specific unpaid bill (for example "pay Enel"). Put the exact bill id from the list in billId and confirm briefly in reply that you are preparing the payment on the main card.
-- CLOSE: when the user says goodbye or thanks you and ends the conversation. Reply with a short goodbye.
-- NONE: in all other cases.
-- billId must be null unless the action is PREPARE_PAYMENT.
+Acțiuni:
+- PREPARE_PAYMENT: doar când utilizatorul cere clar să plătești sau să pregătești o factură anume neplătită (de exemplu „plătește Enel”). Pune id-ul exact al facturii din listă în billId și confirmă scurt în reply că pregătești plata pe cardul salvat.
+- CLOSE: când utilizatorul spune la revedere sau mulțumește și încheie conversația. Răspunde cu un scurt la revedere.
+- NONE: în toate celelalte cazuri.
+- billId trebuie să fie null, decât dacă acțiunea este PREPARE_PAYMENT.
 
-Response format: return only a valid JSON object with the fields reply (text), action (NONE, PREPARE_PAYMENT or CLOSE) and billId (the bill id or null).`;
+Format de răspuns: returnează doar un obiect JSON valid cu câmpurile reply (text), action (NONE, PREPARE_PAYMENT sau CLOSE) și billId (id-ul facturii sau null).`;
 
 export const RESPONSE_SCHEMA = {
   type: 'object',
@@ -82,24 +82,24 @@ export function readChatRequest(body: unknown): ChatRequest | null {
 }
 
 function describeBills(bills: Bill[]): string {
-  if (!bills.length) return 'The user has no bills in the app.';
+  if (!bills.length) return 'Utilizatorul nu are facturi în aplicație.';
   return bills
     .map((b) => {
       const parts = [
         `id: ${b.id}`,
-        `provider: ${b.provider}`,
-        `amount: ${b.amount.toFixed(2)} RON`,
-        `due date: ${b.dueDate}`,
-        `status: ${b.status === 'paid' ? 'paid' : 'unpaid'}`,
+        `furnizor: ${b.provider}`,
+        `sumă: ${b.amount.toFixed(2)} RON`,
+        `scadență: ${b.dueDate}`,
+        `stare: ${b.status === 'paid' ? 'plătită' : 'neplătită'}`,
       ];
-      if (b.note) parts.push(`note: ${b.note}`);
+      if (b.note) parts.push(`notă: ${b.note}`);
       return `- ${parts.join(' | ')}`;
     })
     .join('\n');
 }
 
 export function buildSystemPrompt(bills: Bill[], today: string): string {
-  return `${SYSTEM_PROMPT}\n\nToday's date: ${today}\n\nThe user's bills:\n${describeBills(bills)}`;
+  return `${SYSTEM_PROMPT}\n\nData de azi: ${today}\n\nFacturile utilizatorului:\n${describeBills(bills)}`;
 }
 
 export function parseAssistantReply(raw: string, bills: Bill[]): ChatReply | null {
