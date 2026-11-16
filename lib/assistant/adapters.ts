@@ -1,7 +1,21 @@
-import { answerBillQuestion } from "./bills";
-import type { AssistantAdapters, RecognizerHandlers } from "./types";
+import { dispatchPayment } from "@/lib/payments/store";
+import { MOCK_BILLS } from "./bills";
+import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
 const SPEECH_LANG = "ro-RO";
+const CHAT_ENDPOINT = "/api/chat";
+const FALLBACK_REPLY = "Scuze, nu pot raspunde acum. Incearca din nou.";
+
+function toApiMessages(input: string, history: ChatMessage[]) {
+  const messages = history
+    .filter((m) => m.text.trim())
+    .map((m) => ({ role: m.role, content: m.text }));
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "user" || last.content !== input) {
+    messages.push({ role: "user", content: input });
+  }
+  return messages;
+}
 
 // Minimal typings for the Web Speech API (not in every TS lib version).
 interface SpeechRecognitionResultLike {
@@ -36,9 +50,21 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
 
 /** Default, browser-only adapters. The voice/AI branch can replace these. */
 export const defaultAdapters: AssistantAdapters = {
-  respond: async (input) => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return answerBillQuestion(input);
+  respond: async (input, history) => {
+    try {
+      const res = await fetch(CHAT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: toApiMessages(input, history), bills: MOCK_BILLS }),
+      });
+      const data = (await res.json()) as { reply?: unknown; action?: unknown; billId?: unknown };
+      if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
+        dispatchPayment(data.billId, { type: "PREPARE" });
+      }
+      return typeof data.reply === "string" && data.reply ? data.reply : FALLBACK_REPLY;
+    } catch {
+      return FALLBACK_REPLY;
+    }
   },
 
   speak: (text, onDone) => {
