@@ -39,6 +39,18 @@ const toCartBill = (b: Bill): CartBill => ({
 const listCart = (items: CartBill[]) =>
   items.map((b) => `• ${b.providerName}: ${formatRon(b.amount)}`).join("\n");
 
+/** True when the message is about the cart or checkout (handled locally, not by the AI). */
+export function isCartCommand(input: string): boolean {
+  const q = normalizeSpeech(input);
+  return (
+    includesAny(q, CHECKOUT_PHRASES) ||
+    includesAny(q, CLEAR_PHRASES) ||
+    includesAny(q, REMOVE_WORDS) ||
+    includesAny(q, ADD_WORDS) ||
+    hasWord(q, ["cos", "cart"])
+  );
+}
+
 /** Answers one user message and may trigger cart/checkout through `c`. */
 export function respondToCommand(input: string, c: AssistantCommands): string {
   const q = normalizeSpeech(input);

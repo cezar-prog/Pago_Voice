@@ -1,7 +1,22 @@
-import { respondToCommand } from "./commands";
-import type { AssistantAdapters, RecognizerHandlers } from "./types";
+import { isCartCommand, respondToCommand } from "./commands";
+import type { ChatReply } from "@/lib/types";
+import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
+// Romanian: the app UI, speech recognition and synthesis are all in Romanian.
 const SPEECH_LANG = "ro-RO";
+const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
+const CHAT_ENDPOINT = "/api/chat";
+
+function toApiMessages(input: string, history: ChatMessage[]) {
+  const messages = history
+    .filter((m) => m.text.trim())
+    .map((m) => ({ role: m.role, content: m.text }));
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "user" || last.content !== input) {
+    messages.push({ role: "user", content: input });
+  }
+  return messages;
+}
 
 // Minimal typings for the Web Speech API (not in every TS lib version).
 interface SpeechRecognitionResultLike {
@@ -34,15 +49,49 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-/** Default, browser-only adapters. The voice/AI branch can replace these. */
+/**
+ * Default adapters. Answers come from the AI endpoint (/api/chat). Cart and checkout
+ * commands are handled locally, and the local Romanian answers are the fallback when
+ * the AI is not connected or fails.
+ */
 export const defaultAdapters: AssistantAdapters = {
-  respond: async (input, _history, commands) => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  respond: async (input, history, commands) => {
+    if (isCartCommand(input)) return respondToCommand(input, commands);
+
+    try {
+      const res = await fetch(CHAT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: toApiMessages(input, history),
+          bills: commands.bills,
+        }),
+      });
+      if (!res.ok) throw new Error(`chat ${res.status}`);
+
+      const data = (await res.json()) as Partial<ChatReply>;
+
+      // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
+      if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
+        const bill = commands.bills.find((b) => b.id === data.billId);
+        if (bill && bill.status === "due") {
+          commands.addBillToCart({
+            id: bill.id,
+            providerName: bill.provider,
+            amount: bill.amount,
+            dueDate: bill.dueDate,
+          });
+        }
+      }
+      if (typeof data.reply === "string" && data.reply) return data.reply;
+    } catch {
+      // AI not connected or failed: answer from the local bill data below.
+    }
     return respondToCommand(input, commands);
   },
 
   speak: (text, onDone) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
+    if (!VOICE_ENABLED || typeof window === "undefined" || !window.speechSynthesis) {
       onDone();
       return;
     }
@@ -63,7 +112,7 @@ export const defaultAdapters: AssistantAdapters = {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
   },
 
-  isVoiceSupported: () => getRecognitionCtor() !== null,
+  isVoiceSupported: () => VOICE_ENABLED && getRecognitionCtor() !== null,
 
   createRecognizer: (handlers: RecognizerHandlers) => {
     const Ctor = getRecognitionCtor();
