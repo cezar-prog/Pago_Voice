@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pago Voice · Pulse</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --ground:#EFF2F7;--surface:#FFF;--surface-2:#F7F8FB;--ink:#161F28;--muted:#5A6B8F;--line:#DFE6F6;--accent:#2B59C3;--accent-soft:#E6F0FF;
+  --shadow:0 0 1.4px rgba(24,24,27,.3),0 5.6px 11.2px rgba(24,24,27,.1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;--accent:#7FA2F5;--accent-soft:#1A2747;
+    --shadow:0 4px 12px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;--accent:#7FA2F5;--accent-soft:#1A2747;
+  --shadow:0 4px 12px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 15px/1.6 Poppins,system-ui,sans-serif;overflow-wrap:anywhere}
+h1{font-weight:800;font-size:clamp(30px,5.2vw,46px);line-height:1.1;margin:0}
+h2{font-weight:700;font-size:1.35rem;margin:0 0 14px}
+h3{font-weight:600;font-size:1rem;margin:0}
+p{margin:0}
+svg{max-width:100%;height:auto;display:block}
+.page{max-width:880px;margin:0 auto;padding:24px 16px;display:flex;flex-direction:column;gap:28px}
+.mast{display:flex;align-items:center;gap:14px}
+.mast .w{font-weight:800;font-size:28px;color:var(--accent);line-height:1}
+.mast .sep{width:1px;height:24px;background:var(--line)}
+.mast .t{font-size:13px;color:var(--muted)}
+.poster{position:relative;overflow:hidden;background:linear-gradient(160deg,#2A56D4,#1E43B8);color:#fff;border-radius:28px;padding:28px;display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.poster:after{content:"";position:absolute;right:-80px;bottom:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(255,213,74,.55),rgba(255,213,74,0) 70%);pointer-events:none}
+.poster>*{position:relative;z-index:1}
+.poster .tx{flex:1 1 260px;min-width:0}
+.poster h1{color:#FFD54A}
+.poster .sub{font-weight:700;font-size:1.1rem;margin-top:12px;color:#fff}
+.poster .an{margin-top:10px;color:rgba(255,255,255,.9)}
+.poster .ph{flex:0 1 200px;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+.pill{display:inline-block;border-radius:999px;padding:2px 12px;font-size:12px;font-weight:700;line-height:1.6}
+.m1{background:var(--accent);color:#fff}
+.m2{background:#FFD54A;color:#161F28}
+.here{background:#FFD54A;color:#161F28}
+.ico{width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.ico svg{width:26px;height:26px}
+.stops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;position:relative}
+.stop{display:flex;gap:14px;align-items:flex-start}
+.dot{flex:none;width:48px;display:flex;flex-direction:column;align-items:center}
+.dot svg{width:48px;height:48px}
+.stop .card{flex:1;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.time{font-size:13px;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tile{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tile .for{display:flex;flex-direction:column;gap:4px}
+.tile .for p{font-size:14px}
+.nx{display:flex;flex-direction:column;gap:14px}
+.nx .card p{margin-top:8px}
+footer{border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="mast">
+  <span class="w">pago</span><span class="sep"></span><span class="t">AI Hackathon · Pago Voice</span>
+</header>
+
+<section class="poster" aria-label="Ce construim">
+  <div class="tx">
+    <h1>Pago Voice</h1>
+    <p class="sub">Un asistent AI pentru aplicația Pago, care vorbește cu tine despre facturi.</p>
+    <p class="an">E ca un prieten isteț din telefon: îi spui ce vrei și îți răspunde.</p>
+  </div>
+  <div class="ph">
+    <svg viewBox="0 0 200 300" role="img" aria-label="Telefon cu bulă de asistent și conversație" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="10" y="6" width="180" height="288" rx="34" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.38)"/>
+      <rect x="80" y="16" width="40" height="7" rx="3.5" stroke="rgba(255,255,255,.38)"/>
+      <rect x="34" y="44" width="100" height="26" rx="13"/>
+      <path d="M48 57h60" />
+      <rect x="66" y="82" width="100" height="26" rx="13" stroke="#FFD54A"/>
+      <path d="M80 95h50" stroke="#FFD54A"/>
+      <circle cx="100" cy="162" r="26" stroke="#FFD54A"/>
+      <circle cx="100" cy="162" r="40" stroke="rgba(255,213,74,.5)"/>
+      <path d="M100 150v24M92 156v12M108 156v12" stroke="#FFD54A"/>
+      <rect x="30" y="236" width="140" height="34" rx="17"/>
+      <circle cx="152" cy="253" r="9" stroke="#FFD54A"/>
+    </svg>
+  </div>
+</section>
+
+<section aria-label="Problemă, idee, demo">
+  <h2>Problemă → Idee → Demo</h2>
+  <div class="card">
+    <svg viewBox="0 0 760 250" role="img" aria-label="Problemă: facturi în aplicație. Idee: asistent AI cu voce. Demo: bulă în mijloc și conversație sus." fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" font-family="Poppins,system-ui,sans-serif">
+      <g>
+        <rect x="55" y="20" width="110" height="130" rx="14"/>
+        <path d="M75 50h70M75 72h70M75 94h45"/>
+        <path d="M130 118l12 12 20-24"/>
+        <text x="110" y="185" text-anchor="middle" fill="var(--ink)" stroke="none" font-weight="700" font-size="16">Problema</text>
+        <text x="110" y="208" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="13">Facturi în aplicația Pago</text>
+      </g>
+      <path d="M200 85h50M238 73l12 12-12 12"/>
+      <g>
+        <circle cx="380" cy="75" r="42"/>
+        <circle cx="380" cy="75" r="26" stroke="var(--ink)"/>
+        <path d="M380 62v26M371 68v14M389 68v14" stroke="var(--ink)"/>
+        <text x="380" y="185" text-anchor="middle" fill="var(--ink)" stroke="none" font-weight="700" font-size="16">Ideea</text>
+        <text x="380" y="208" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="13">Asistent AI cu voce</text>
+      </g>
+      <path d="M440 85h50M478 73l12 12-12 12"/>
+      <g>
+        <rect x="560" y="10" width="100" height="150" rx="18"/>
+        <rect x="574" y="26" width="72" height="18" rx="9"/>
+        <circle cx="610" cy="88" r="16" stroke="var(--ink)"/>
+        <rect x="574" y="126" width="72" height="20" rx="10"/>
+        <text x="610" y="185" text-anchor="middle" fill="var(--ink)" stroke="none" font-weight="700" font-size="16">Demo</text>
+        <text x="610" y="208" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="13">Bulă în mijloc, chat sus</text>
+        <text x="610" y="228" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="13">Se închide după 10 secunde</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section aria-label="Traseul">
+  <h2>Traseul</h2>
+  <ol class="stops">
+    <li class="stop">
+      <div class="dot"><svg viewBox="0 0 48 48" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"><circle cx="24" cy="24" r="9" fill="var(--accent-soft)"/><path d="M24 33v15" /></svg></div>
+      <div class="card">
+        <div class="row"><span class="pill m1">M1</span><span class="time">10:28 16.11.2026</span></div>
+        <h3>Pagina de progres pornește; repo-ul are 2 commit-uri, restul e încă nou</h3>
+      </div>
+    </li>
+    <li class="stop">
+      <div class="dot"><svg viewBox="0 0 48 48" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"><path d="M24 0v15"/><circle cx="24" cy="24" r="9" fill="#FFD54A" stroke="var(--accent)"/></svg></div>
+      <div class="card">
+        <div class="row"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 12:42 (ora României)</span><span class="pill here">Ești aici</span></div>
+        <h3>Overlay-ul AI și pagina principală sunt gata, urmează verificarea în browser</h3>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<section aria-label="Cum folosim Claude">
+  <h2>Cum folosim Claude</h2>
+  <div class="tiles">
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/></svg></div>
+      <h3>Claude Code</h3>
+      <div class="for"><span><span class="pill m1">M1</span></span><p>citirea și scrierea fișierelor din repo, comenzi git și un plan de lucru pas cu pas</p></div>
+      <div class="for"><span><span class="pill m2">M2</span></span><p>A scris și modificat fișierele aplicației (pagina principală și asistentul).</p></div>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 19a2 2 0 002 2h13v-2"/><path d="M9 8h6"/></svg></div>
+      <h3>Documentația Next.js din proiect</h3>
+      <div class="for"><span><span class="pill m2">M2</span></span><p>Am citit-o înainte de a scrie cod, pentru că AGENTS.md cerea asta.</p></div>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l2 2 3-3M4 14l2 2 3-3M12 7h8M12 15h8"/></svg></div>
+      <h3>Lista de pași</h3>
+      <div class="for"><span><span class="pill m2">M2</span></span><p>Am ținut vizibil ce urmează în fiecare sarcină.</p></div>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 9v4M12 13l-5 4M12 13l5 4"/></svg></div>
+      <h3>Subagent</h3>
+      <div class="for"><span><span class="pill m2">M2</span></span><p>Generează pagina de progres pornind de la starea echipei.</p></div>
+    </div>
+  </div>
+</section>
+
+<section aria-label="Pasul următor">
+  <h2>Pasul următor</h2>
+  <div class="nx">
+    <div class="card">
+      <span class="pill m1">M1</span>
+      <p>Pasul următor nu a fost formulat în această sesiune; pagina de progres este pasul curent.</p>
+    </div>
+    <div class="card">
+      <span class="pill m2">M2</span>
+      <p>Să instalez Node.js, să pornesc aplicația cu npm run dev și să verific bula și pagina principală, apoi să leg adaptoarele de voce și AI de la colegul meu.</p>
+    </div>
+  </div>
+</section>
+
+<footer>Făcut la Pago</footer>
+
+</div>
+<script type="application/json" id="pulse-data">{
+  "team": "Pago Voice",
+  "ticks": [
+    {
+      "n": 1,
+      "member": 1,
+      "time": "10:28 16.11.2026",
+      "headline": "Pagina de progres pornește; repo-ul are 2 commit-uri, restul e încă nou"
+    },
+    {
+      "n": 2,
+      "member": 2,
+      "time": "16 noiembrie 2026, 12:42 (ora României)",
+      "headline": "Overlay-ul AI și pagina principală sunt gata, urmează verificarea în browser"
+    }
+  ],
+  "members": {
+    "1": {
+      "building": "Pago Voice: funcții vocale pentru aplicația Pago (branch-ul voice_ai). Detaliile nu au fost descrise în această sesiune.",
+      "works": "Din git: 2 commit-uri (configurare .gitignore și instalare SDK). Folderele app/, components/ și hooks/ există, dar nu sunt urmărite în git. Nu am verificat dacă aplicația rulează.",
+      "blocking": "Niciun blocaj menționat în această sesiune.",
+      "features": [
+        {
+          "name": "Claude Code",
+          "for": "citirea și scrierea fișierelor din repo, comenzi git și un plan de lucru pas cu pas"
+        }
+      ],
+      "next": "Pasul următor nu a fost formulat în această sesiune; pagina de progres este pasul curent."
+    },
+    "2": {
+      "building": "Un asistent AI pentru aplicația Pago: un buton jos, o bulă care apare în mijlocul ecranului când vorbești și o conversație care urcă sus, cu răspunsuri despre facturi.",
+      "works": "Interfața asistentului este scrisă: buton de deschidere, bulă animată, text care apare pe măsură ce vorbești, câmp pentru text, închidere automată după 10 secunde sau la „Mulțumesc Pago”. Pagina principală cu facturi este gata. Nu am rulat încă aplicația în browser.",
+      "blocking": "Node.js nu este instalat pe calculatorul meu, deci nu am putut compila sau verifica interfața. Partea de voce și AI este la colegul de pe ramura voice_ai.",
+      "features": [
+        {
+          "name": "Claude Code",
+          "for": "A scris și modificat fișierele aplicației (pagina principală și asistentul)."
+        },
+        {
+          "name": "Documentația Next.js din proiect",
+          "for": "Am citit-o înainte de a scrie cod, pentru că AGENTS.md cerea asta."
+        },
+        {
+          "name": "Lista de pași",
+          "for": "Am ținut vizibil ce urmează în fiecare sarcină."
+        },
+        {
+          "name": "Subagent",
+          "for": "Generează pagina de progres pornind de la starea echipei."
+        }
+      ],
+      "next": "Să instalez Node.js, să pornesc aplicația cu npm run dev și să verific bula și pagina principală, apoi să leg adaptoarele de voce și AI de la colegul meu."
+    }
+  }
+}
+</script>
+</body>
+</html>

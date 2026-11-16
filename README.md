@@ -1,34 +1,36 @@
-# Pago Voice
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Asistentul vocal Pago pentru plata facturilor. Next.js (App Router) + Tailwind CSS + Framer Motion + Anthropic SDK.
+## Getting Started
 
-## Pornire
+First, run the development server:
 
-1. Copiaza `.env.example` in `.env.local` si pune cheia ta:
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-   ```bash
-   cp .env.example .env.local
-   ```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-   `ANTHROPIC_API_KEY=...`
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-2. Instaleaza dependintele si porneste aplicatia:
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-   ```bash
-   npm install
-   npm run dev
-   ```
+## Learn More
 
-3. Deschide http://localhost:3000 in Chrome si permite microfonul. Spune "Hei Pago, cat am la Digi?" sau apasa microfonul.
+To learn more about Next.js, take a look at the following resources:
 
-Comenzi utile: `npm run typecheck`, `npm run lint`, `npm run build`.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Structura
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-- `app/api/chat/route.ts` - endpoint POST care primeste istoricul si facturile, apeleaza modelul si returneaza `{ reply, action, billId }`.
-- `lib/chat/assistant.ts` - prompt, validarea cererii si parsarea raspunsului modelului.
-- `lib/voice/controller.ts` - masina de stari vocala (wake word, intrebare, raspuns, inchidere), fara React.
-- `lib/voice/recognition.ts`, `lib/voice/text.ts` - API-ul de recunoastere vocala si regulile de text.
-- `hooks/usePagoVoice.ts` - leaga controllerul de React.
-- `components/voice/PagoVoice.tsx` - buton flotant + overlay; se monteaza o singura data in pagina.
-- `lib/types.ts`, `lib/bills.ts` - tipul `Bill` si facturi de test.
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
