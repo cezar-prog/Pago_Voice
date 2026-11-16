@@ -1,4 +1,5 @@
 import type { BillCategory } from "./types";
+import { CATEGORY_LABEL_RO, formatRon } from "./format";
 
 /** One billed month. `period` is YYYY-MM, so periods sort correctly as strings. */
 export interface MonthlyBill {
@@ -164,20 +165,20 @@ export function detectBillAnomalies(
  */
 export function historySummaryForAI(histories: ProviderHistory[] = MOCK_HISTORY): string {
   const lines = histories.map((h) => {
-    const months = h.bills.map((b) => `${b.period}: ${b.amount.toFixed(2)}`).join(", ");
-    return `${h.provider} (${h.category}, ${h.currency}): ${months}`;
+    const months = h.bills.map((b) => `${b.period}: ${formatRon(b.amount)}`).join(", ");
+    return `${h.provider} (${CATEGORY_LABEL_RO[h.category]}): ${months}`;
   });
 
   const anomalies = detectBillAnomalies(histories);
   const flagged =
     anomalies.length === 0
-      ? "No bill is unusually high compared with recent months."
+      ? "Nicio factură nu este neobișnuit de mare față de lunile recente."
       : anomalies
           .map(
             (a) =>
-              `${a.provider} ${a.period}: ${a.amount.toFixed(2)} ${a.currency}, typical ${a.expected.toFixed(2)} ${a.currency} (+${a.deviationPct.toFixed(0)}%)`,
+              `${a.provider} ${a.period}: ${formatRon(a.amount)}, de obicei ${formatRon(a.expected)} (+${a.deviationPct.toFixed(0)}%)`,
           )
           .join("; ");
 
-  return [`Bill history (monthly):`, ...lines, `Flagged for review: ${flagged}`].join("\n");
+  return ["Istoricul facturilor (lunar):", ...lines, `Semnalate pentru verificare: ${flagged}`].join("\n");
 }

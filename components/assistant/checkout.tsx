@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, CreditCard, ScanFace, ShoppingBag, X } from "lucide-react";
 import { useAssistant } from "./assistant-provider";
 import type { CartBill } from "@/lib/assistant/types";
+import { formatDateRo, formatRon, plural } from "@/lib/assistant/format";
 
 const PAGO_BLUE = "#0066FF";
 const CYAN = "#00E5FF";
@@ -13,9 +14,7 @@ const CYAN = "#00E5FF";
 export const DEMO_PIN = "1234";
 const SAVED_CARD = "Visa •••• 4821";
 
-const money = (n: number) => `${n.toFixed(2)} RON`;
-const formatDate = (iso: string) =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const facturi = (n: number) => `${n} ${plural(n, "factură", "facturi")}`;
 
 /** Floating bar above the launcher, shown while the cart has bills. */
 export function CartPill() {
@@ -37,7 +36,7 @@ export function CartPill() {
           <button
             type="button"
             onClick={openCheckout}
-            aria-label={`Open checkout: ${count} bills, ${money(total)}`}
+            aria-label={`Deschide plata: ${facturi(count)}, ${formatRon(total)}`}
             className="pointer-events-auto touch-manipulation flex items-center gap-3 rounded-full border border-white/15 py-2 pl-2 pr-4 text-white shadow-[0_12px_32px_rgba(0,102,255,0.45)] backdrop-blur-xl"
             style={{ background: `linear-gradient(135deg, ${PAGO_BLUE}, #1d4ed8)` }}
           >
@@ -46,9 +45,9 @@ export function CartPill() {
             </span>
             <span className="text-left leading-tight">
               <span className="block text-[11px] text-white/75">
-                {count} {count === 1 ? "bill" : "bills"} in cart
+                {facturi(count)} în coș
               </span>
-              <span className="block text-sm font-semibold">{money(total)}</span>
+              <span className="block text-sm font-semibold">{formatRon(total)}</span>
             </span>
             <ChevronRight className="h-4 w-4 text-white/80" />
           </button>
@@ -127,7 +126,7 @@ export function CheckoutScreen() {
       className="fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-black/90 backdrop-blur-2xl"
       role="dialog"
       aria-modal="true"
-      aria-label="Checkout"
+      aria-label="Plată"
     >
       <div className="flex min-h-full w-full max-w-md flex-col px-5 pb-8 pt-8">
         {phase === "success" ? (
@@ -135,11 +134,11 @@ export function CheckoutScreen() {
         ) : (
           <>
             <header className="flex items-center justify-between">
-              <span className="text-sm font-medium tracking-wide text-white/60">Checkout</span>
+              <span className="text-sm font-medium tracking-wide text-white/60">Plată</span>
               <button
                 type="button"
                 onClick={closeCheckout}
-                aria-label="Close checkout"
+                aria-label="Închide plata"
                 className="rounded-full border border-white/10 bg-white/10 p-2 text-white/70 backdrop-blur-xl hover:bg-white/20"
               >
                 <X className="h-5 w-5" />
@@ -152,15 +151,15 @@ export function CheckoutScreen() {
                   <li key={b.id} className="flex items-center justify-between py-2.5">
                     <div>
                       <p className="text-sm font-medium text-white">{b.providerName}</p>
-                      <p className="text-xs text-white/45">Due {formatDate(b.dueDate)}</p>
+                      <p className="text-xs text-white/45">Scadentă {formatDateRo(b.dueDate)}</p>
                     </div>
-                    <p className="text-sm font-semibold text-white">{money(b.amount)}</p>
+                    <p className="text-sm font-semibold text-white">{formatRon(b.amount)}</p>
                   </li>
                 ))}
               </ul>
               <div className="mt-3 flex items-end justify-between border-t border-white/10 pt-3">
                 <span className="text-xs uppercase tracking-widest text-white/45">Total</span>
-                <span className="text-3xl font-semibold tracking-tight text-white">{money(total)}</span>
+                <span className="text-3xl font-semibold tracking-tight text-white">{formatRon(total)}</span>
               </div>
             </div>
 
@@ -214,7 +213,7 @@ function FaceConfirm({ verifying, onStart }: { verifying: boolean; onStart: () =
         type="button"
         onClick={onStart}
         disabled={verifying}
-        aria-label="Confirm with Face ID"
+        aria-label="Confirmă cu Face ID"
         className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] border border-white/10 bg-white/[0.04] disabled:cursor-default"
       >
         {/* Corner brackets of a Face ID frame. */}
@@ -238,7 +237,7 @@ function FaceConfirm({ verifying, onStart }: { verifying: boolean; onStart: () =
         )}
       </button>
       <p className="text-center text-xs uppercase tracking-widest text-white/45">
-        {verifying ? "Verifying" : "Tap to confirm with Face ID"}
+        {verifying ? "Se verifică" : "Atinge ca să confirmi cu Face ID"}
       </p>
     </div>
   );
@@ -281,7 +280,7 @@ function PinPad({
       </motion.div>
 
       <p className="h-4 text-xs text-white/45">
-        {verifying ? "Verifying" : error ? "Wrong PIN" : "Enter your 4-digit PIN"}
+        {verifying ? "Se verifică…" : error ? "PIN greșit" : "Introdu PIN-ul de 4 cifre"}
       </p>
 
       <div className="grid w-full max-w-[260px] grid-cols-3 gap-3">
@@ -294,7 +293,7 @@ function PinPad({
               type="button"
               onClick={() => (key === "⌫" ? onBackspace() : onDigit(key))}
               disabled={verifying}
-              aria-label={key === "⌫" ? "Delete" : `Digit ${key}`}
+              aria-label={key === "⌫" ? "Șterge" : `Cifra ${key}`}
               className="flex h-16 items-center justify-center rounded-full border border-white/10 bg-white/10 text-2xl font-medium text-white backdrop-blur-xl transition-colors active:bg-white/25 disabled:opacity-50"
             >
               {key}
@@ -354,7 +353,7 @@ function SuccessView({ count, total }: { count: number; total: number }) {
         transition={{ delay: 0.9 }}
         className="mt-8 text-2xl font-semibold text-white"
       >
-        Payment successful
+        Plată reușită
       </motion.h2>
       <motion.p
         initial={{ opacity: 0, y: 10 }}
@@ -362,7 +361,7 @@ function SuccessView({ count, total }: { count: number; total: number }) {
         transition={{ delay: 1.05 }}
         className="mt-2 text-sm text-white/60"
       >
-        {count} {count === 1 ? "bill" : "bills"} paid · {money(total)}
+        {facturi(count)} {plural(count, "plătită", "plătite")} · {formatRon(total)}
       </motion.p>
     </motion.div>
   );

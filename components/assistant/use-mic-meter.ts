@@ -45,10 +45,10 @@ export function useMicMeter(enabled: boolean): MicMeterState {
           return;
         }
         meter = m;
-        setError(m ? null : "Microphone is not available in this browser.");
+        setError(m ? null : "Microfonul nu este disponibil în acest browser.");
       })
       .catch(() => {
-        if (!cancelled) setError("Allow microphone access to see your volume.");
+        if (!cancelled) setError("Permite accesul la microfon ca să vezi volumul.");
       });
 
     return () => {

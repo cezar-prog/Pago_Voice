@@ -1,10 +1,11 @@
 import { CURRENT_PERIOD } from "./bill-history";
 import { answerBillQuestion } from "./bills";
+import { formatRon, plural } from "./format";
 import { normalizeSpeech } from "./text";
 import type { AssistantCommands, Bill, CartBill } from "./types";
 
-// Mock voice/AI router for the cart flow. The AI backend can replace this and call
-// the same `commands` methods.
+// Mock Romanian voice/AI router for the cart flow. The AI backend can replace this
+// and call the same `commands` methods.
 
 const CHECKOUT_PHRASES = [
   "hai sa le platim",
@@ -25,8 +26,8 @@ const includesAny = (text: string, words: string[]) => words.some((w) => text.in
 const hasWord = (text: string, words: string[]) =>
   text.split(" ").some((t) => words.includes(t));
 
-const money = (n: number) => `${n.toFixed(2)} RON`;
 const total = (items: CartBill[]) => items.reduce((sum, b) => sum + b.amount, 0);
+const facturi = (n: number) => `${n} ${plural(n, "factură", "facturi")}`;
 
 const toCartBill = (b: Bill): CartBill => ({
   id: b.id,
@@ -36,58 +37,58 @@ const toCartBill = (b: Bill): CartBill => ({
 });
 
 const listCart = (items: CartBill[]) =>
-  items.map((b) => `• ${b.providerName}: ${money(b.amount)}`).join("\n");
+  items.map((b) => `• ${b.providerName}: ${formatRon(b.amount)}`).join("\n");
 
 /** Answers one user message and may trigger cart/checkout through `c`. */
 export function respondToCommand(input: string, c: AssistantCommands): string {
   const q = normalizeSpeech(input);
-  if (!q) return "I didn't catch that. Could you repeat?";
+  if (!q) return "Nu am înțeles. Poți repeta?";
 
   if (includesAny(q, CHECKOUT_PHRASES)) {
     if (c.paymentCart.length === 0) {
-      return "Your cart is empty. Add a bill first, for example: add Enel.";
+      return "Coșul este gol. Adaugă mai întâi o factură, de exemplu: adaugă Enel.";
     }
     c.openCheckout();
-    return `Opening checkout for ${c.paymentCart.length} bill(s), ${money(total(c.paymentCart))} in total.`;
+    return `Deschid plata pentru ${facturi(c.paymentCart.length)}, în total ${formatRon(total(c.paymentCart))}.`;
   }
 
   if (includesAny(q, CLEAR_PHRASES)) {
     c.clearCart();
-    return "Cart cleared.";
+    return "Coșul a fost golit.";
   }
 
   if (includesAny(q, REMOVE_WORDS)) {
     const inCart = c.paymentCart.find((b) => q.includes(normalizeSpeech(b.providerName)));
-    if (!inCart) return "That bill is not in your cart.";
+    if (!inCart) return "Factura aceasta nu este în coș.";
     c.removeBillFromCart(inCart.id);
-    return `Removed ${inCart.providerName} from the cart.`;
+    return `Am scos ${inCart.providerName} din coș.`;
   }
 
   if (includesAny(q, ADD_WORDS)) {
     const bill = c.bills.find((b) => q.includes(normalizeSpeech(b.provider)));
-    if (!bill) return "Which bill? Try a company name like Enel or Digi.";
-    if (bill.status === "paid") return `${bill.provider} is already paid.`;
+    if (!bill) return "Care factură? Spune un nume de companie, de exemplu Enel sau Digi.";
+    if (bill.status === "paid") return `${bill.provider} este deja plătită.`;
     if (c.paymentCart.some((b) => b.id === bill.id)) {
-      return `${bill.provider} is already in your cart.`;
+      return `${bill.provider} este deja în coș.`;
     }
     const item = toCartBill(bill);
     c.addBillToCart(item);
     const cart = [...c.paymentCart, item];
-    return `Added ${bill.provider} (${money(bill.amount)}). Cart: ${cart.length} bill(s), ${money(total(cart))}.`;
+    return `Am adăugat ${bill.provider} (${formatRon(bill.amount)}). Coș: ${facturi(cart.length)}, total ${formatRon(total(cart))}.`;
   }
 
   if (hasWord(q, ["cos", "cart"])) {
-    if (c.paymentCart.length === 0) return "Your cart is empty.";
-    return `Your cart:\n${listCart(c.paymentCart)}\nTotal: ${money(total(c.paymentCart))}`;
+    if (c.paymentCart.length === 0) return "Coșul este gol.";
+    return `Coșul tău:\n${listCart(c.paymentCart)}\nTotal: ${formatRon(total(c.paymentCart))}`;
   }
 
   if (includesAny(q, MONTH_PHRASES)) {
     const month = c.bills.filter((b) => b.dueDate.startsWith(CURRENT_PERIOD));
-    if (month.length === 0) return "No bills are due this month.";
+    if (month.length === 0) return "Nu ai facturi scadente luna aceasta.";
     const lines = month.map(
-      (b) => `• ${b.provider}: ${money(b.amount)} (${b.status === "paid" ? "paid" : "due"})`,
+      (b) => `• ${b.provider}: ${formatRon(b.amount)} (${b.status === "paid" ? "plătită" : "de plătit"})`,
     );
-    return `Bills this month:\n${lines.join("\n")}`;
+    return `Facturile din luna aceasta:\n${lines.join("\n")}`;
   }
 
   return answerBillQuestion(input, c.bills);

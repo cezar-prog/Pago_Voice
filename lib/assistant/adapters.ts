@@ -48,6 +48,11 @@ export const defaultAdapters: AssistantAdapters = {
     }
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = SPEECH_LANG;
+    // Prefer an installed Romanian voice; fall back to the browser default.
+    const roVoice = window.speechSynthesis
+      .getVoices()
+      .find((v) => v.lang.toLowerCase().startsWith("ro"));
+    if (roVoice) utterance.voice = roVoice;
     utterance.onend = onDone;
     utterance.onerror = onDone;
     window.speechSynthesis.cancel();

@@ -39,7 +39,7 @@ export function AiAssistant() {
             layoutId="pago-ai-orb"
             type="button"
             onClick={open}
-            aria-label="Open Pago AI assistant"
+            aria-label="Deschide asistentul Pago"
             whileTap={{ scale: 0.94 }}
             className="pointer-events-auto relative z-10 h-16 w-16 touch-manipulation"
           >
@@ -69,7 +69,7 @@ function AssistantOverlay() {
       className="fixed inset-0 z-50 flex justify-center overflow-hidden bg-black/90 backdrop-blur-2xl"
       role="dialog"
       aria-modal="true"
-      aria-label="Pago AI assistant"
+      aria-label="Asistentul Pago"
     >
       {/* Soft light rising from the bottom edge. */}
       <div
@@ -83,11 +83,11 @@ function AssistantOverlay() {
 
       <div className="relative flex h-full w-full max-w-md flex-col px-5 pb-6 pt-8">
         <header className="flex items-center justify-between">
-          <span className="text-sm font-medium tracking-wide text-white/60">Pago Assistant</span>
+          <span className="text-sm font-medium tracking-wide text-white/60">Asistent Pago</span>
           <button
             type="button"
             onClick={close}
-            aria-label="Close assistant"
+            aria-label="Închide asistentul"
             className="rounded-full border border-white/10 bg-white/10 p-2 text-white/70 backdrop-blur-xl transition-colors hover:bg-white/20"
           >
             <X className="h-5 w-5" />
@@ -316,10 +316,10 @@ function SiriOrb({
 }
 
 const ZONE_FEEDBACK: Record<MicZone, { label: string; tone: string }> = {
-  silent: { label: "Can't hear you yet. Speak or move closer.", tone: "text-white/45" },
-  quiet: { label: "Too quiet. Move closer to the microphone.", tone: "text-amber-300" },
-  good: { label: "Good volume.", tone: "text-cyan-200" },
-  loud: { label: "Too loud. Move back a little.", tone: "text-amber-300" },
+  silent: { label: "Nu te aud încă. Vorbește sau apropie-te.", tone: "text-white/45" },
+  quiet: { label: "Prea încet. Apropie-te de microfon.", tone: "text-amber-300" },
+  good: { label: "Volum bun.", tone: "text-cyan-200" },
+  loud: { label: "Prea tare. Depărtează-te puțin.", tone: "text-amber-300" },
 };
 
 const pct = (raw: number) => (raw / METER_FULL_SCALE) * 100;
@@ -370,10 +370,10 @@ function LevelMeter({
 }
 
 const STATUS_HINT: Record<AssistantStatus, string> = {
-  idle: "Tap the mic or type a question",
-  listening: "Listening",
-  thinking: "Thinking",
-  speaking: "Speaking",
+  idle: "Atinge microfonul sau scrie o întrebare",
+  listening: "Te ascult",
+  thinking: "Mă gândesc",
+  speaking: "Răspund",
 };
 
 /** Live transcript in big, clean type right under the orb. */
@@ -480,7 +480,7 @@ function AssistantInput() {
           onClick={toggleMic}
           disabled={!voiceSupported}
           aria-pressed={micOn}
-          aria-label={micOn ? "Turn microphone off" : "Turn microphone on"}
+          aria-label={micOn ? "Oprește microfonul" : "Pornește microfonul"}
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
             micOn ? "bg-[#00E5FF] text-black" : "bg-white/10 text-white/70"
           }`}
@@ -494,14 +494,14 @@ function AssistantInput() {
             setDraft(e.target.value);
             noteActivity();
           }}
-          placeholder="Ask about your bills…"
+          placeholder="Întreabă despre facturile tale…"
           className="min-w-0 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-white/35"
         />
 
         <button
           type="submit"
           disabled={!draft.trim()}
-          aria-label="Send message"
+          aria-label="Trimite mesajul"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black transition-opacity disabled:opacity-30"
         >
           <Send className="h-4 w-4" />

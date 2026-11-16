@@ -258,9 +258,9 @@ export function AssistantProvider({
         if (!active) return;
         if (error === "not-allowed" || error === "service-not-allowed") {
           setMicOn(false);
-          setVoiceError("Microphone access is blocked. Type your question instead.");
+          setVoiceError("Accesul la microfon este blocat. Scrie întrebarea în loc.");
         } else if (error !== "no-speech" && error !== "aborted") {
-          setVoiceError(`Voice input failed (${error}). Type your question instead.`);
+          setVoiceError(`Intrarea vocală a eșuat (${error}). Scrie întrebarea în loc.`);
         }
       },
     });
