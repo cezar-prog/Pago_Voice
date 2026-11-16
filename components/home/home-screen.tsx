@@ -1,0 +1,203 @@
+import type { ComponentType } from "react";
+import {
+  Bell,
+  Car,
+  CreditCard,
+  House,
+  Plus,
+  Receipt,
+  ScanLine,
+  Send,
+  Wallet,
+  Wifi,
+  Zap,
+  User,
+  Home,
+  type LucideProps,
+} from "lucide-react";
+import { MOCK_BILLS } from "@/lib/assistant/bills";
+import type { Bill, BillCategory } from "@/lib/assistant/types";
+
+const CATEGORY_ICON: Record<BillCategory, ComponentType<LucideProps>> = {
+  auto: Car,
+  house: House,
+  utilities: Zap,
+  telecom: Wifi,
+  other: Receipt,
+};
+
+const QUICK_ACTIONS: { label: string; icon: ComponentType<LucideProps> }[] = [
+  { label: "Pay", icon: CreditCard },
+  { label: "Send", icon: Send },
+  { label: "Top up", icon: Plus },
+  { label: "Scan", icon: ScanLine },
+];
+
+const formatAmount = (amount: number) =>
+  amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const formatDate = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+export function HomeScreen() {
+  const dueBills = MOCK_BILLS.filter((b) => b.status === "due").sort((a, b) =>
+    a.dueDate.localeCompare(b.dueDate),
+  );
+  const paidBills = MOCK_BILLS.filter((b) => b.status === "paid");
+  const totalDue = dueBills.reduce((sum, b) => sum + b.amount, 0);
+
+  return (
+    <div className="min-h-dvh w-full bg-zinc-100 text-zinc-900">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col pb-40">
+        {/* Header */}
+        <header className="flex items-center justify-between px-5 pb-2 pt-10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-sm font-bold text-white">
+              CG
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500">Good morning</p>
+              <p className="text-base font-semibold">Cezar</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
+          >
+            <Bell className="h-5 w-5 text-zinc-700" />
+            <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-rose-500" />
+          </button>
+        </header>
+
+        {/* Balance card */}
+        <section className="px-5 pt-4">
+          <div className="rounded-3xl bg-gradient-to-br from-violet-600 via-violet-700 to-indigo-800 p-5 text-white shadow-lg">
+            <div className="flex items-center justify-between text-sm text-white/80">
+              <span className="flex items-center gap-2">
+                <Wallet className="h-4 w-4" /> Bills due
+              </span>
+              <span>{dueBills.length} open</span>
+            </div>
+            <p className="mt-3 text-3xl font-semibold tracking-tight">
+              {formatAmount(totalDue)} <span className="text-lg font-normal text-white/70">RON</span>
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-2xl bg-white/10 p-3">
+                <p className="text-white/70">Paid this month</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {formatAmount(paidBills.reduce((s, b) => s + b.amount, 0))} RON
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3">
+                <p className="text-white/70">Next due</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {dueBills[0] ? `${dueBills[0].provider} · ${formatDate(dueBills[0].dueDate)}` : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick actions */}
+        <section className="grid grid-cols-4 gap-3 px-5 pt-6">
+          {QUICK_ACTIONS.map(({ label, icon: Icon }) => (
+            <button key={label} type="button" className="flex flex-col items-center gap-2">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+                <Icon className="h-5 w-5 text-violet-600" />
+              </span>
+              <span className="text-xs font-medium text-zinc-600">{label}</span>
+            </button>
+          ))}
+        </section>
+
+        {/* Bills */}
+        <section className="px-5 pt-8">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Upcoming bills</h2>
+            <button type="button" className="text-sm font-medium text-violet-600">
+              See all
+            </button>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {[...dueBills, ...paidBills].map((bill) => (
+              <BillRow key={bill.id} bill={bill} />
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <BottomNav />
+    </div>
+  );
+}
+
+function BillRow({ bill }: { bill: Bill }) {
+  const Icon = CATEGORY_ICON[bill.category];
+  const paid = bill.status === "paid";
+
+  return (
+    <li className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50">
+        <Icon className="h-5 w-5 text-violet-600" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{bill.provider}</p>
+        <p className="text-xs text-zinc-500">
+          {paid ? "Paid" : `Due ${formatDate(bill.dueDate)}`} · {bill.category}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-semibold">
+          {formatAmount(bill.amount)} <span className="text-xs font-normal text-zinc-500">{bill.currency}</span>
+        </p>
+        <span
+          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+            paid ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+          }`}
+        >
+          {paid ? "Paid" : "Due"}
+        </span>
+      </div>
+    </li>
+  );
+}
+
+/** Bottom bar. The centre gap is where the AI launcher floats. */
+function BottomNav() {
+  return (
+    <nav
+      aria-label="Main navigation"
+      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-20 max-w-md items-center justify-around border-t border-zinc-200 bg-white/95 px-6 pb-2 backdrop-blur-md"
+    >
+      <NavItem icon={Home} label="Home" active />
+      <NavItem icon={Wallet} label="Wallet" />
+      <div className="w-16" aria-hidden />
+      <NavItem icon={Receipt} label="Bills" />
+      <NavItem icon={User} label="Profile" />
+    </nav>
+  );
+}
+
+function NavItem({
+  icon: Icon,
+  label,
+  active = false,
+}: {
+  icon: ComponentType<LucideProps>;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-current={active ? "page" : undefined}
+      className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
+        active ? "text-violet-600" : "text-zinc-400"
+      }`}
+    >
+      <Icon className="h-5 w-5" />
+      {label}
+    </button>
+  );
+}
