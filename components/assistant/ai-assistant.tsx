@@ -9,7 +9,7 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { Mic, MicOff, Send, X } from "lucide-react";
+import { Mic, MicOff, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useAssistant } from "./assistant-provider";
 import { CartPill, CheckoutScreen } from "./checkout";
 import { InvoiceViewerModal } from "./invoice-viewer";
@@ -60,6 +60,25 @@ export function AiAssistant() {
   );
 }
 
+function MuteButton() {
+  const { isAssistantMuted, toggleAssistantMute } = useAssistant();
+  const Icon = isAssistantMuted ? VolumeX : Volume2;
+
+  return (
+    <button
+      type="button"
+      onClick={toggleAssistantMute}
+      aria-pressed={isAssistantMuted}
+      aria-label={isAssistantMuted ? "Pornește vocea asistentului" : "Oprește vocea asistentului"}
+      className={`absolute top-6 right-6 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 backdrop-blur-2xl transition-colors ${
+        isAssistantMuted ? "bg-white/5 text-white/35" : "bg-white/10 text-white/70"
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
+
 function AssistantOverlay() {
   const { expanded, status, messages, liveTranscript, close } = useAssistant();
   const listening = status === "listening";
@@ -76,6 +95,7 @@ function AssistantOverlay() {
       aria-modal="true"
       aria-label="Asistentul Pago"
     >
+      <MuteButton />
       {/* Soft light rising from the bottom edge. */}
       <div
         aria-hidden

@@ -76,6 +76,10 @@ export interface AssistantAdapters {
   /** Read the answer aloud; call onDone when speech ends (or fails). */
   speak: (text: string, onDone: () => void) => void;
   cancelSpeech: () => void;
+  /** Pause the current reply (mute). Returns true if a reply is playing or loading. */
+  pauseSpeech: () => boolean;
+  /** Continue a paused reply (unmute). Returns true if a reply is still pending. */
+  resumeSpeech: () => boolean;
   isVoiceSupported: () => boolean;
   /** Return null when speech recognition is unavailable. */
   createRecognizer: (handlers: RecognizerHandlers) => Recognizer | null;

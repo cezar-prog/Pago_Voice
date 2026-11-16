@@ -7,6 +7,11 @@ const SPEECH_LANG = "ro-RO";
 const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
 const CHAT_ENDPOINT = "/api/chat";
 
+let ttsToken = 0;
+let currentAudio: HTMLAudioElement | null = null;
+let speechActive = false;
+let speechPaused = false;
+
 function toApiMessages(input: string, history: ChatMessage[]) {
   const messages = history
     .filter((m) => m.text.trim())
@@ -91,25 +96,66 @@ export const defaultAdapters: AssistantAdapters = {
   },
 
   speak: (text, onDone) => {
-    if (!VOICE_ENABLED || typeof window === "undefined" || !window.speechSynthesis) {
+    if (!VOICE_ENABLED || typeof window === "undefined") {
       onDone();
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = SPEECH_LANG;
-    // Prefer an installed Romanian voice; fall back to the browser default.
-    const roVoice = window.speechSynthesis
-      .getVoices()
-      .find((v) => v.lang.toLowerCase().startsWith("ro"));
-    if (roVoice) utterance.voice = roVoice;
-    utterance.onend = onDone;
-    utterance.onerror = onDone;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    const token = ++ttsToken;
+    speechActive = true;
+    fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("tts failed");
+        return res.blob();
+      })
+      .then((blob) => {
+        if (token !== ttsToken) return;
+        const audio = new Audio(URL.createObjectURL(blob));
+        currentAudio = audio;
+        const done = () => {
+          URL.revokeObjectURL(audio.src);
+          if (currentAudio === audio) currentAudio = null;
+          if (token !== ttsToken) return;
+          speechActive = false;
+          onDone();
+        };
+        audio.onended = done;
+        audio.onerror = done;
+        audio.volume = 0.235;
+        if (speechPaused) return; // Muted while loading: starts when resumed.
+        audio.play().catch(done);
+      })
+      .catch(() => {
+        if (token !== ttsToken) return;
+        speechActive = false;
+        onDone();
+      });
   },
 
   cancelSpeech: () => {
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    ttsToken++;
+    speechActive = false;
+    speechPaused = false;
+    currentAudio?.pause();
+    currentAudio = null;
+  },
+
+  pauseSpeech: () => {
+    speechPaused = true;
+    currentAudio?.pause();
+    return speechActive;
+  },
+
+  resumeSpeech: () => {
+    speechPaused = false;
+    if (currentAudio) {
+      const audio = currentAudio;
+      audio.play().catch(() => audio.onerror?.(new Event("error")));
+    }
+    return speechActive;
   },
 
   isVoiceSupported: () => VOICE_ENABLED && getRecognitionCtor() !== null,
