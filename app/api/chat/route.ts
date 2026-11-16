@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { answerBillQuestion, MOCK_BILLS } from '@/lib/assistant/bills';
 import type { ChatReply } from '@/lib/types';
 import {
   buildSystemPrompt,
@@ -21,11 +22,6 @@ function failure(text: string, status: number) {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return failure('Asistentul nu este configurat inca. Lipseste cheia de acces.', 500);
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -35,6 +31,12 @@ export async function POST(request: Request) {
 
   const input = readChatRequest(body);
   if (!input) return failure('Nu am primit nicio intrebare.', 400);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    const question = input.messages[input.messages.length - 1].content;
+    return reply({ reply: answerBillQuestion(question, MOCK_BILLS), action: 'NONE', billId: null });
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const client = new Anthropic({ apiKey });
