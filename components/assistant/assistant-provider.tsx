@@ -14,6 +14,7 @@ import { defaultAdapters } from "@/lib/assistant/adapters";
 import { MOCK_BILLS } from "@/lib/assistant/bills";
 import { playWakeChime } from "@/lib/assistant/chime";
 import { extractWakeRest, isClosePhrase } from "@/lib/assistant/text";
+import { throttleLatest } from "@/lib/assistant/throttle";
 import type {
   AssistantAdapters,
   AssistantCommands,
@@ -30,6 +31,9 @@ const IDLE_TIMEOUT_MS = 10_000;
 
 /** Pause between wake-listener sessions (the browser ends each one after an utterance). */
 const WAKE_RESTART_MS = 300;
+
+/** Minimum gap between redraws of the live transcript while the user is speaking. */
+const LIVE_TRANSCRIPT_MS = 250;
 
 /** Shown and spoken when the assistant opens without a question yet. */
 const WELCOME_TEXT = "Bună! Sunt asistentul Pago. Cu ce te pot ajuta astăzi?";
@@ -314,16 +318,19 @@ export function AssistantProvider({
 
     let active = true;
     let heard = false;
+    // Interim words arrive many times a second; paint them at most every 250 ms.
+    const paint = throttleLatest(setLiveTranscript, LIVE_TRANSCRIPT_MS);
     const recognizer = adaptersRef.current.createRecognizer({
       onInterim: (text) => {
         if (!active) return;
         heard = true;
-        setLiveTranscript(text);
+        paint.push(text);
         setLastActivity(Date.now());
       },
       onFinal: (text) => {
         if (!active) return;
         heard = true;
+        paint.cancel();
         silentEndsRef.current = 0;
         void handleUtteranceRef.current(text);
       },
@@ -357,6 +364,7 @@ export function AssistantProvider({
     recognizer.start();
     return () => {
       active = false;
+      paint.cancel();
       recognizer.stop();
     };
   }, [isOpen, micOn, busy, micTick, paused]);
