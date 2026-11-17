@@ -15,6 +15,8 @@ const NOT_UNDERSTOOD = 'Nu am înțeles. Poți repeta?';
 const REFUSAL_REPLY = 'Nu te pot ajuta cu asta. Te pot ajuta cu facturile tale.';
 const KEY_REJECTED_REPLY =
   'AI-ul a respins cheia API. Verifică cheia din .env.local și repornește serverul.';
+const QUOTA_REPLY =
+  'Limita zilnică de cereri a AI-ului a fost atinsă. Încearcă mai târziu sau schimbă cheia API.';
 const NOT_CONNECTED_REPLY =
   'AI-ul nu este conectat. Adaugă GEMINI_API_KEY sau ANTHROPIC_API_KEY în .env.local și repornește serverul.';
 
@@ -89,6 +91,7 @@ export async function POST(request: Request) {
     }
     const status = typeof (error as { status?: unknown })?.status === 'number' ? (error as { status: number }).status : 0;
     console.error(`Pago Voice ${provider} error`, status, error instanceof Error ? error.message : error);
+    if (status === 429) return failure(QUOTA_REPLY, 429);
     if (status === 401 || status === 403) return failure(KEY_REJECTED_REPLY, 502);
     return failure(FALLBACK_REPLY, 502);
   }

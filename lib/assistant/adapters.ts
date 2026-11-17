@@ -39,6 +39,9 @@ interface SpeechRecognitionLike {
   onresult: ((e: SpeechRecognitionEventLike) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
+  onstart: (() => void) | null;
+  onspeechstart: (() => void) | null;
+  onnomatch: (() => void) | null;
   start: () => void;
   stop: () => void;
   abort: () => void;
@@ -77,6 +80,10 @@ export const defaultAdapters: AssistantAdapters = {
       if (!res.ok) throw new Error(`chat ${res.status}`);
 
       const data = (await res.json()) as Partial<ChatReply>;
+      commands.setDirective({
+        action: typeof data.action === "string" ? data.action : "NONE",
+        target: typeof data.billId === "string" ? data.billId : null,
+      });
 
       // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
       if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
@@ -183,8 +190,17 @@ export const defaultAdapters: AssistantAdapters = {
       if (final.trim()) handlers.onFinal(final.trim());
       else if (interim.trim()) handlers.onInterim(interim.trim());
     };
-    rec.onerror = (e) => handlers.onError(e.error);
-    rec.onend = () => handlers.onEnd();
+    rec.onstart = () => console.info("[voice] start");
+    rec.onspeechstart = () => console.info("[voice] speech start");
+    rec.onnomatch = () => console.info("[voice] no match");
+    rec.onerror = (e) => {
+      console.warn("[voice] error", e.error);
+      handlers.onError(e.error);
+    };
+    rec.onend = () => {
+      console.info("[voice] end");
+      handlers.onEnd();
+    };
 
     return {
       start: () => {
