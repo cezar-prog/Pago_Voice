@@ -12,7 +12,11 @@ import {
 } from "react";
 import { defaultAdapters } from "@/lib/assistant/adapters";
 import { MOCK_BILLS } from "@/lib/assistant/bills";
-import { isClosePhrase } from "@/lib/assistant/text";
+import { extractWakeRest, isClosePhrase } from "@/lib/assistant/text";
+import type { Recognizer } from "@/lib/assistant/types";
+
+// Pause between wake-listener sessions (the browser ends each one after an utterance).
+const WAKE_RESTART_MS = 300;
 import type {
   AssistantAdapters,
   AssistantCommands,
@@ -335,6 +339,56 @@ export function AssistantProvider({
       recognizer.stop();
     };
   }, [isOpen, micOn, busy, micTick, paused]);
+
+  // Wake word: while the assistant is closed, listen for "Hello Pago" / "Hi Pago" and open it.
+  // Each recognizer session ends after one utterance, so it is restarted until a wake phrase
+  // is heard or the effect is cleaned up.
+  useEffect(() => {
+    if (isOpen || !voiceSupported || paused) return;
+
+    let active = true;
+    let restartId: number | undefined;
+    let recognizer: Recognizer | null = null;
+
+    const stopListening = () => {
+      active = false;
+      window.clearTimeout(restartId);
+      recognizer?.stop();
+      recognizer = null;
+    };
+
+    const heard = (text: string, isFinal: boolean) => {
+      const rest = extractWakeRest(text);
+      if (rest === null) return;
+      stopListening();
+      open();
+      if (isFinal && rest) void handleUtteranceRef.current(rest);
+    };
+
+    const listen = () => {
+      if (!active) return;
+      recognizer = adaptersRef.current.createRecognizer({
+        onInterim: (text) => heard(text, false),
+        onFinal: (text) => heard(text, true),
+        onEnd: () => {
+          recognizer = null;
+          if (active) restartId = window.setTimeout(listen, WAKE_RESTART_MS);
+        },
+        onError: (error) => {
+          // Permission denied: stop for good instead of retrying forever.
+          if (error === "not-allowed" || error === "service-not-allowed") stopListening();
+        },
+      });
+      if (!recognizer) {
+        active = false;
+        return;
+      }
+      recognizer.start();
+    };
+
+    listen();
+    return stopListening;
+  }, [isOpen, voiceSupported, paused, open]);
 
   // Idle timeout: close after 10 s with no activity (not while the assistant is working
   // or while the checkout screen is open).
