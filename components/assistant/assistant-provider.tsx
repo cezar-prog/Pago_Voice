@@ -12,11 +12,9 @@ import {
 } from "react";
 import { defaultAdapters } from "@/lib/assistant/adapters";
 import { MOCK_BILLS } from "@/lib/assistant/bills";
+import { playWakeChime } from "@/lib/assistant/chime";
 import { extractWakeRest, isClosePhrase } from "@/lib/assistant/text";
-import type { Recognizer } from "@/lib/assistant/types";
-
-// Pause between wake-listener sessions (the browser ends each one after an utterance).
-const WAKE_RESTART_MS = 300;
+import { throttleLatest } from "@/lib/assistant/throttle";
 import type {
   AssistantAdapters,
   AssistantCommands,
@@ -25,10 +23,20 @@ import type {
   Bill,
   CartBill,
   ChatMessage,
+  Recognizer,
 } from "@/lib/assistant/types";
 
 /** Closes the assistant after this long without activity. */
 const IDLE_TIMEOUT_MS = 10_000;
+
+/** Pause between wake-listener sessions (the browser ends each one after an utterance). */
+const WAKE_RESTART_MS = 300;
+
+/** Minimum gap between redraws of the live transcript while the user is speaking. */
+const LIVE_TRANSCRIPT_MS = 250;
+
+/** Shown and spoken when the assistant opens without a question yet. */
+const WELCOME_TEXT = "Bună! Sunt asistentul Pago. Cu ce te pot ajuta astăzi?";
 
 type Busy = "idle" | "thinking" | "speaking";
 
@@ -140,20 +148,37 @@ export function AssistantProvider({
     setVoiceError(null);
   }, []);
 
-  const open = useCallback(() => {
-    if (isOpenRef.current) return;
-    isOpenRef.current = true;
-    turnRef.current += 1;
-    messagesRef.current = [];
-    setMessages([]);
-    setIsOpen(true);
-    setExpanded(false);
-    setBusy("idle");
-    setLiveTranscript("");
-    setVoiceError(null);
-    setMicOn(adaptersRef.current.isVoiceSupported());
-    setLastActivity(Date.now());
-  }, []);
+  // Opens the overlay. With `greet`, the assistant welcomes the user (text and voice).
+  const openAssistant = useCallback(
+    (greet: boolean) => {
+      if (isOpenRef.current) return;
+      isOpenRef.current = true;
+      const turn = ++turnRef.current;
+      messagesRef.current = [];
+      setMessages([]);
+      setIsOpen(true);
+      setExpanded(false);
+      setBusy("idle");
+      setLiveTranscript("");
+      setVoiceError(null);
+      setMicOn(adaptersRef.current.isVoiceSupported());
+      setLastActivity(Date.now());
+      if (!greet) return;
+
+      setExpanded(true);
+      pushMessage("assistant", WELCOME_TEXT);
+      if (mutedRef.current) return;
+      setBusy("speaking");
+      adaptersRef.current.speak(WELCOME_TEXT, () => {
+        if (turn !== turnRef.current) return;
+        setBusy("idle");
+        setLastActivity(Date.now());
+      });
+    },
+    [pushMessage],
+  );
+
+  const open = useCallback(() => openAssistant(true), [openAssistant]);
 
   // ---- Payment cart ------------------------------------------------------
 
@@ -293,16 +318,19 @@ export function AssistantProvider({
 
     let active = true;
     let heard = false;
+    // Interim words arrive many times a second; paint them at most every 250 ms.
+    const paint = throttleLatest(setLiveTranscript, LIVE_TRANSCRIPT_MS);
     const recognizer = adaptersRef.current.createRecognizer({
       onInterim: (text) => {
         if (!active) return;
         heard = true;
-        setLiveTranscript(text);
+        paint.push(text);
         setLastActivity(Date.now());
       },
       onFinal: (text) => {
         if (!active) return;
         heard = true;
+        paint.cancel();
         silentEndsRef.current = 0;
         void handleUtteranceRef.current(text);
       },
@@ -336,6 +364,7 @@ export function AssistantProvider({
     recognizer.start();
     return () => {
       active = false;
+      paint.cancel();
       recognizer.stop();
     };
   }, [isOpen, micOn, busy, micTick, paused]);
@@ -361,7 +390,9 @@ export function AssistantProvider({
       const rest = extractWakeRest(text);
       if (rest === null) return;
       stopListening();
-      open();
+      playWakeChime();
+      // Greet only when no question came with the wake phrase.
+      openAssistant(rest === "");
       if (isFinal && rest) void handleUtteranceRef.current(rest);
     };
 
@@ -388,7 +419,7 @@ export function AssistantProvider({
 
     listen();
     return stopListening;
-  }, [isOpen, voiceSupported, paused, open]);
+  }, [isOpen, voiceSupported, paused, openAssistant]);
 
   // Idle timeout: close after 10 s with no activity (not while the assistant is working
   // or while the checkout screen is open).
