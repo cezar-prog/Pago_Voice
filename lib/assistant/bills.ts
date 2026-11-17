@@ -1,5 +1,6 @@
 import type { Bill } from "./types";
 import { normalizeSpeech } from "./text";
+import { FALLBACK_REPLY } from "./intents";
 import { CATEGORY_LABEL_RO, formatDateRo, formatRon, plural } from "./format";
 import {
   MOCK_HISTORY,
@@ -109,5 +110,5 @@ export function answerBillQuestion(
     return next ? `Următoarea scadență: ${describe(next)}` : "Nu ai scadențe viitoare.";
   }
 
-  return "Te pot ajuta cu facturile: furnizor, sumă, scadență, stare sau categorie. Ce vrei să știi?";
+  return FALLBACK_REPLY;
 }

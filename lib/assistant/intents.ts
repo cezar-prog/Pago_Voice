@@ -21,6 +21,13 @@ export type IntentName =
 
 export type Keyword = string | RegExp;
 
+/** Shown when no intent or answer matches, so the assistant never stays silent. */
+export const FALLBACK_REPLY =
+  "Bună, sunt asistentul tău vocal Pago. Te pot ajuta să vizualizezi sau să plătești facturile. Cu ce te pot ajuta?";
+
+/** Words that mean "everything", used only right after the payment follow-up question. */
+export const ALL_WORDS = ["tot", "toate", "toate facturile", "tot le"];
+
 export interface IntentDefinition {
   intent: IntentName;
   description: string;
@@ -33,7 +40,11 @@ export const INTENT_DICTIONARY: IntentDefinition[] = [
     // Must come before CHECKOUT, which also matches "plateste".
     intent: "PAY_ALL",
     description: "Selectează toate facturile neplătite, le adaugă în coș și deschide plata imediat.",
-    keywords: [/\bplateste (tot|toate)\b/, "plateste tot", "pay everything", "pay all"],
+    keywords: [
+      /\b(plateste|platesc|platim|plati) (tot|toate)\b/,
+      "pay everything",
+      "pay all",
+    ],
     local: true,
   },
   {

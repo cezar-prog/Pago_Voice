@@ -1,7 +1,7 @@
-import { CURRENT_PERIOD } from "./bill-history";
+import { CURRENT_PERIOD, MOCK_HISTORY, detectBillAnomalies, type ProviderHistory } from "./bill-history";
 import { answerBillQuestion } from "./bills";
 import { formatRon, plural } from "./format";
-import { detectIntent, type IntentName } from "./intents";
+import { ALL_WORDS, detectIntent, type IntentName } from "./intents";
 import { normalizeSpeech } from "./text";
 import type { AssistantCommands, Bill, CartBill, ChatMessage } from "./types";
 
@@ -168,12 +168,39 @@ export function localReply(input: string, c: AssistantCommands, history: ChatMes
 
   // Stateful follow-up: we just asked "Vrei să plătim ceva acum?".
   if (isAwaitingPaymentChoice(history)) {
+    if (ALL_WORDS.includes(q)) return HANDLERS.PAY_ALL(q, c);
     const matched = findBills(q, c.bills);
     if (matched.length > 0) return addBills(matched, c);
     if (YES_WORDS.includes(q)) return "Spune ce factură vrei să plătești, de exemplu Enel sau Digi.";
     if (NO_WORDS.includes(q)) return "Bine, nu plătim acum.";
   }
   return null;
+}
+
+/** True when the message asks for all invoices this month ("Ce facturi am luna asta?"). */
+export function isShowAllMonth(input: string): boolean {
+  return detectIntent(normalizeSpeech(input))?.intent === "VIEW_MONTH_BILLS";
+}
+
+/**
+ * Warning for this month's bills whose amount is unusually high compared with their usual
+ * amount. Null when none is flagged.
+ */
+export function suspiciousBillWarning(
+  bills: Bill[],
+  histories: ProviderHistory[] = MOCK_HISTORY,
+): string | null {
+  const monthProviders = new Set(
+    bills.filter((b) => b.dueDate.startsWith(CURRENT_PERIOD)).map((b) => b.provider),
+  );
+  const flagged = detectBillAnomalies(histories).filter((a) => monthProviders.has(a.provider));
+  if (flagged.length === 0) return null;
+  return flagged
+    .map(
+      (a) =>
+        `Atenție, factura la ${a.provider} este neobișnuit de mare luna aceasta (${formatRon(a.amount)}, de obicei ${formatRon(a.expected)}).`,
+    )
+    .join(" ");
 }
 
 /** Answers one user message. Local actions first, then the intent handlers, then the bill answers. */

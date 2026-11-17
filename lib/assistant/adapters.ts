@@ -1,11 +1,13 @@
-import { localReply, respondToCommand } from "./commands";
+import { isShowAllMonth, localReply, respondToCommand, suspiciousBillWarning } from "./commands";
 import type { ChatReply } from "@/lib/types";
-import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
+import type { AssistantAdapters, AssistantCommands, ChatMessage, RecognizerHandlers } from "./types";
 
 // Romanian: the app UI, speech recognition and synthesis are all in Romanian.
 const SPEECH_LANG = "ro-RO";
 const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
 const CHAT_ENDPOINT = "/api/chat";
+/** Longest wait for the AI or the voice service before we answer locally, so the loader always stops. */
+const REQUEST_TIMEOUT_MS = 15_000;
 
 let ttsToken = 0;
 let currentAudio: HTMLAudioElement | null = null;
@@ -58,50 +60,70 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
 }
 
 /**
- * Default adapters. Answers come from the AI endpoint (/api/chat). Cart and checkout
- * commands are handled locally, and the local Romanian answers are the fallback when
- * the AI is not connected or fails.
+ * Answers one message: the local router first (cart, checkout, unpaid list, follow-up),
+ * then the AI endpoint, then the local bill answers if the AI is down or slow.
+ */
+async function answer(
+  input: string,
+  history: ChatMessage[],
+  commands: AssistantCommands,
+): Promise<string> {
+  // Cart, checkout, unpaid list and the payment follow-up are answered here, never by the AI.
+  const local = localReply(input, commands, history);
+  if (local !== null) return local;
+
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(CHAT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: toApiMessages(input, history),
+        bills: commands.bills,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`chat ${res.status}`);
+
+    const data = (await res.json()) as Partial<ChatReply>;
+    commands.setDirective({
+      action: typeof data.action === "string" ? data.action : "NONE",
+      target: typeof data.billId === "string" ? data.billId : null,
+    });
+
+    // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
+    if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
+      const bill = commands.bills.find((b) => b.id === data.billId);
+      if (bill && bill.status === "due") {
+        commands.addBillToCart({
+          id: bill.id,
+          providerName: bill.provider,
+          amount: bill.amount,
+          dueDate: bill.dueDate,
+        });
+      }
+    }
+    if (typeof data.reply === "string" && data.reply) return data.reply;
+  } catch {
+    // AI not connected, failed or timed out: answer from the local bill data below.
+  } finally {
+    window.clearTimeout(timer);
+  }
+  return respondToCommand(input, commands, history);
+}
+
+/**
+ * Default adapters. Answers come from the local router and the AI endpoint (/api/chat).
+ * The local answers are the fallback when the AI is not connected, fails or times out.
  */
 export const defaultAdapters: AssistantAdapters = {
   respond: async (input, history, commands) => {
-    // Cart, checkout, unpaid list and the payment follow-up are answered here, never by the AI.
-    const local = localReply(input, commands, history);
-    if (local !== null) return local;
-
-    try {
-      const res = await fetch(CHAT_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: toApiMessages(input, history),
-          bills: commands.bills,
-        }),
-      });
-      if (!res.ok) throw new Error(`chat ${res.status}`);
-
-      const data = (await res.json()) as Partial<ChatReply>;
-      commands.setDirective({
-        action: typeof data.action === "string" ? data.action : "NONE",
-        target: typeof data.billId === "string" ? data.billId : null,
-      });
-
-      // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
-      if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
-        const bill = commands.bills.find((b) => b.id === data.billId);
-        if (bill && bill.status === "due") {
-          commands.addBillToCart({
-            id: bill.id,
-            providerName: bill.provider,
-            amount: bill.amount,
-            dueDate: bill.dueDate,
-          });
-        }
-      }
-      if (typeof data.reply === "string" && data.reply) return data.reply;
-    } catch {
-      // AI not connected or failed: answer from the local bill data below.
-    }
-    return respondToCommand(input, commands, history);
+    const reply = await answer(input, history, commands);
+    // "Show all this month": warn about any bill that is unusually high, even on a general query.
+    if (!isShowAllMonth(input)) return reply;
+    const warning = suspiciousBillWarning(commands.bills);
+    return warning ? `${reply}\n\n${warning}` : reply;
   },
 
   speak: (text, onDone) => {
@@ -111,16 +133,20 @@ export const defaultAdapters: AssistantAdapters = {
     }
     const token = ++ttsToken;
     speechActive = true;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
+      signal: controller.signal,
     })
       .then((res) => {
         if (!res.ok) throw new Error("tts failed");
         return res.blob();
       })
       .then((blob) => {
+        window.clearTimeout(timer);
         if (token !== ttsToken) return;
         const audio = new Audio(URL.createObjectURL(blob));
         currentAudio = audio;
@@ -138,6 +164,7 @@ export const defaultAdapters: AssistantAdapters = {
         audio.play().catch(done);
       })
       .catch(() => {
+        window.clearTimeout(timer);
         if (token !== ttsToken) return;
         speechActive = false;
         onDone();

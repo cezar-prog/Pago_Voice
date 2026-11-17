@@ -12,6 +12,7 @@ import {
 } from "react";
 import { defaultAdapters } from "@/lib/assistant/adapters";
 import { MOCK_BILLS } from "@/lib/assistant/bills";
+import { FALLBACK_REPLY } from "@/lib/assistant/intents";
 import { isClosePhrase } from "@/lib/assistant/text";
 import type {
   AssistantAdapters,
@@ -230,7 +231,13 @@ export function AssistantProvider({
         openInvoice,
         setDirective,
       };
-      const reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
+      // Never leave the loader running: if answering throws, show the fallback instead.
+      let reply: string;
+      try {
+        reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
+      } catch {
+        reply = FALLBACK_REPLY;
+      }
       if (turn !== turnRef.current) return;
 
       pushMessage("assistant", reply);
