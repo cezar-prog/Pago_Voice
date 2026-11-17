@@ -12,6 +12,7 @@ import {
 } from "react";
 import { defaultAdapters } from "@/lib/assistant/adapters";
 import { MOCK_BILLS } from "@/lib/assistant/bills";
+import { playWakeChime } from "@/lib/assistant/chime";
 import { extractWakeRest, isClosePhrase } from "@/lib/assistant/text";
 import type {
   AssistantAdapters,
@@ -381,6 +382,7 @@ export function AssistantProvider({
       const rest = extractWakeRest(text);
       if (rest === null) return;
       stopListening();
+      playWakeChime();
       // Greet only when no question came with the wake phrase.
       openAssistant(rest === "");
       if (isFinal && rest) void handleUtteranceRef.current(rest);
