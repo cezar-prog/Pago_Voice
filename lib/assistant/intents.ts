@@ -9,7 +9,9 @@
 // (cart, checkout and invoice actions must always change the app state).
 
 export type IntentName =
+  | "PAY_ALL"
   | "CHECKOUT"
+  | "UNPAID_BILLS"
   | "OPEN_INVOICE"
   | "CLEAR_CART"
   | "REMOVE_FROM_CART"
@@ -28,6 +30,13 @@ export interface IntentDefinition {
 
 export const INTENT_DICTIONARY: IntentDefinition[] = [
   {
+    // Must come before CHECKOUT, which also matches "plateste".
+    intent: "PAY_ALL",
+    description: "Selectează toate facturile neplătite, le adaugă în coș și deschide plata imediat.",
+    keywords: [/\bplateste (tot|toate)\b/, "plateste tot", "pay everything", "pay all"],
+    local: true,
+  },
+  {
     intent: "CHECKOUT",
     description: "Deschide plata pentru facturile din coș.",
     keywords: [
@@ -35,11 +44,17 @@ export const INTENT_DICTIONARY: IntentDefinition[] = [
       "plateste le",
       /\bplateste\b/,
       /\bplatim\b/,
+      "hai sa platim",
       "checkout",
       "pay now",
       "pay them",
-      "pay all",
     ],
+    local: true,
+  },
+  {
+    intent: "UNPAID_BILLS",
+    description: "Arată doar facturile neplătite (de plată, restante) și întreabă dacă vrea să plătească.",
+    keywords: ["de plata", "de achitat", "restant", "neplatit", "neachitat", "unpaid", "overdue"],
     local: true,
   },
   {
@@ -66,8 +81,8 @@ export const INTENT_DICTIONARY: IntentDefinition[] = [
   },
   {
     intent: "ADD_TO_CART",
-    description: "Adaugă o factură în coș, de exemplu „adaugă Enel”.",
-    keywords: [/\badauga\b/, "pune in cos", "add to cart", /\badd\b/, "hai sa platim"],
+    description: "Adaugă una sau mai multe facturi în coș, de exemplu „adaugă Enel și Digi” sau „plătesc Digi, Engie”.",
+    keywords: [/\badauga\b/, /\bplatesc\b/, "pune in cos", "add to cart", /\badd\b/],
     local: true,
   },
   {

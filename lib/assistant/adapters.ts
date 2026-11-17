@@ -1,4 +1,4 @@
-import { isCartCommand, respondToCommand } from "./commands";
+import { localReply, respondToCommand } from "./commands";
 import type { ChatReply } from "@/lib/types";
 import type { AssistantAdapters, ChatMessage, RecognizerHandlers } from "./types";
 
@@ -64,7 +64,9 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
  */
 export const defaultAdapters: AssistantAdapters = {
   respond: async (input, history, commands) => {
-    if (isCartCommand(input)) return respondToCommand(input, commands);
+    // Cart, checkout, unpaid list and the payment follow-up are answered here, never by the AI.
+    const local = localReply(input, commands, history);
+    if (local !== null) return local;
 
     try {
       const res = await fetch(CHAT_ENDPOINT, {
@@ -99,7 +101,7 @@ export const defaultAdapters: AssistantAdapters = {
     } catch {
       // AI not connected or failed: answer from the local bill data below.
     }
-    return respondToCommand(input, commands);
+    return respondToCommand(input, commands, history);
   },
 
   speak: (text, onDone) => {
