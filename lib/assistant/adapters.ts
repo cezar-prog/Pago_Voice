@@ -78,6 +78,10 @@ export const defaultAdapters: AssistantAdapters = {
       if (!res.ok) throw new Error(`chat ${res.status}`);
 
       const data = (await res.json()) as Partial<ChatReply>;
+      commands.setDirective({
+        action: typeof data.action === "string" ? data.action : "NONE",
+        target: typeof data.billId === "string" ? data.billId : null,
+      });
 
       // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
       if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {

@@ -60,6 +60,14 @@ export interface AssistantCommands {
   clearCart: () => void;
   openCheckout: () => void;
   openInvoice: (bill: Bill) => void;
+  /** Publishes the action the AI asked for, so the UI can react (e.g. open checkout). */
+  setDirective: (directive: AssistantDirective) => void;
+}
+
+/** The structured part of an AI reply: which action to run and on which bill. */
+export interface AssistantDirective {
+  action: string;
+  target: string | null;
 }
 
 /**

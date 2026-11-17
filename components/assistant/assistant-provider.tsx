@@ -16,6 +16,7 @@ import { isClosePhrase } from "@/lib/assistant/text";
 import type {
   AssistantAdapters,
   AssistantCommands,
+  AssistantDirective,
   AssistantStatus,
   Bill,
   CartBill,
@@ -63,6 +64,8 @@ interface AssistantContextValue {
   viewingInvoice: Bill | null;
   openInvoice: (bill: Bill) => void;
   closeInvoice: () => void;
+  /** Latest action the AI asked for (PREPARE_PAYMENT, OPEN_INVOICE, ...), or null. */
+  directive: AssistantDirective | null;
 }
 
 const AssistantContext = createContext<AssistantContextValue | null>(null);
@@ -93,6 +96,7 @@ export function AssistantProvider({
   const [paymentCart, setPaymentCart] = useState<CartBill[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Bill | null>(null);
+  const [directive, setDirective] = useState<AssistantDirective | null>(null);
 
   // Refs mirror state where async callbacks need the latest value.
   const isOpenRef = useRef(false);
@@ -101,6 +105,8 @@ export function AssistantProvider({
   const cartRef = useRef<CartBill[]>([]);
   /** Incremented on every new turn/session; stale async work checks it and bails. */
   const turnRef = useRef(0);
+  /** Recognizer sessions that ended without hearing anything, in a row. */
+  const silentEndsRef = useRef(0);
   const handleUtteranceRef = useRef<(text: string) => Promise<void>>(async () => {});
 
   useEffect(() => {
@@ -172,6 +178,13 @@ export function AssistantProvider({
 
   const closeCheckout = useCallback(() => setCheckoutOpen(false), []);
 
+  // The AI asked to pay a bill: the bill is already in the cart (adapter), so open checkout.
+  useEffect(() => {
+    if (directive?.action === "PREPARE_PAYMENT" && cartRef.current.length > 0) {
+      setCheckoutOpen(true);
+    }
+  }, [directive]);
+
   const confirmPayment = useCallback(() => {
     const paidIds = new Set(cartRef.current.map((b) => b.id));
     billsRef.current = billsRef.current.map((b) =>
@@ -215,6 +228,7 @@ export function AssistantProvider({
         clearCart,
         openCheckout,
         openInvoice,
+        setDirective,
       };
       const reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
       if (turn !== turnRef.current) return;
@@ -274,18 +288,31 @@ export function AssistantProvider({
     if (!isOpen || !micOn || busy !== "idle" || paused) return;
 
     let active = true;
+    let heard = false;
     const recognizer = adaptersRef.current.createRecognizer({
       onInterim: (text) => {
         if (!active) return;
+        heard = true;
         setLiveTranscript(text);
         setLastActivity(Date.now());
       },
       onFinal: (text) => {
         if (!active) return;
+        heard = true;
+        silentEndsRef.current = 0;
         void handleUtteranceRef.current(text);
       },
       onEnd: () => {
         if (!active) return;
+        // Chrome can end the session at once (e.g. "aborted"). Without a cap this restarts
+        // every 300 ms forever, so stop after 3 silent sessions in a row.
+        silentEndsRef.current = heard ? 0 : silentEndsRef.current + 1;
+        if (silentEndsRef.current >= 3) {
+          silentEndsRef.current = 0;
+          setMicOn(false);
+          setVoiceError("Microfonul nu pornește. Apasă microfonul ca să încerci din nou.");
+          return;
+        }
         window.setTimeout(() => {
           if (active) setMicTick((n) => n + 1);
         }, 300);
@@ -349,6 +376,7 @@ export function AssistantProvider({
       viewingInvoice,
       openInvoice,
       closeInvoice,
+      directive,
     }),
     [
       isOpen,
@@ -378,6 +406,7 @@ export function AssistantProvider({
       viewingInvoice,
       openInvoice,
       closeInvoice,
+      directive,
     ],
   );
 

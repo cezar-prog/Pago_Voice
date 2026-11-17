@@ -40,6 +40,9 @@ export async function startMicMeter(
 
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const ctx = new AudioContext();
+  // The context is created after an async permission step, so Chrome may start it
+  // suspended. A suspended context returns silence forever, which froze the meter.
+  if (ctx.state === "suspended") await ctx.resume();
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 2048;
   ctx.createMediaStreamSource(stream).connect(analyser);
