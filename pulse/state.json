@@ -42,6 +42,12 @@
       "member": 2,
       "time": "17 noiembrie 2026, 01:37 (ora României)",
       "headline": "Vizualizatorul de facturi și dicționarul de intenții sunt gata, iar conflictul cu mute-ul este rezolvat"
+    },
+    {
+      "n": 8,
+      "member": 2,
+      "time": "17 noiembrie 2026, 13:37 (ora României)",
+      "headline": "Asistentul poartă o conversație mai bună: întreabă ce plătim, plătește tot și avertizează asupra sumelor mari"
     }
   ],
   "members": {
@@ -59,12 +65,12 @@
     },
     "2": {
       "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, un coș în care strângi mai multe facturi, o plată confirmată cu Face ID sau PIN și vizualizarea facturii în format PDF.",
-      "works": "Coșul și plata funcționează prin voce sau text. Vizualizatorul deschide pentru fiecare furnizor o factură de test, cu detalii specifice și totaluri care se potrivesc cu suma facturii. Recunoașterea intențiilor este într-un dicționar, iar răspunsurile sunt în română. Merge-ul cu ramura principală este făcut, iar funcția de mut din ramura principală a fost păstrată împreună cu vizualizatorul. Nimic din acestea nu a fost verificat cu npm run build sau lint după ultimele modificări.",
-      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu funcționează încă. Vizualizatorul de facturi nu a fost testat pe telefon. Logo-urile din facturi sunt marcaje generice, nu logo-uri reale.",
+      "works": "Coșul și plata funcționează prin voce sau text. Vizualizatorul deschide o factură de test pentru fiecare furnizor. Asistentul întreabă acum dacă vrei să plătești ceva, poate plăti toate facturile, adaugă mai multe facturi odată și avertizează asupra sumelor neobișnuite. Răspunsul AI are un format structurat. Modificările din ultima sesiune nu sunt încă comise, iar nimic din acestea nu a fost verificat cu npm run build sau lint.",
+      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu funcționează încă. Node.js nu este accesibil din sesiunea mea, deci nu pot rula build-ul. Vizualizatorul de facturi și conversația nu au fost testate pe telefon.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi și dicționarul de intenții."
+          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi, dicționarul de intenții și conversația cu întrebări de urmărire."
         },
         {
           "name": "Documentația Next.js din proiect",
@@ -91,7 +97,7 @@
           "for": "Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă."
         }
       ],
-      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, apoi să testez pe telefon vizualizatorul de facturi, coșul și plata."
+      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, să comit modificările, apoi să testez pe telefon conversația, plata și vizualizatorul de facturi."
     }
   }
 }

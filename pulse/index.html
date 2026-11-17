@@ -7,265 +7,191 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
 <style>
 :root{
-  --ground:#EFF2F7;--surface:#FFF;--surface-2:#F7F8FB;--ink:#161F28;--muted:#5A6B8F;--line:#DFE6F6;
-  --accent:#2B59C3;--accent-soft:#E6F0FF;--on-accent:#FFF;
+  --ground:#EFF2F7;--surface:#FFF;--surface-2:#F7F8FB;--ink:#161F28;--muted:#5A6B8F;--line:#DFE6F6;--accent:#2B59C3;--accent-soft:#E6F0FF;
   --shadow:0 0 1.4px rgba(24,24,27,.3),0 5.6px 11.2px rgba(24,24,27,.1);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;
-    --accent:#7FA2F5;--accent-soft:#1A2747;--on-accent:#0E131A;
+    --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;--accent:#7FA2F5;--accent-soft:#1A2747;
     --shadow:0 4px 12px rgba(0,0,0,.35);
   }
 }
 :root[data-theme="dark"]{
-  --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;
-  --accent:#7FA2F5;--accent-soft:#1A2747;--on-accent:#0E131A;
+  --ground:#0E131A;--surface:#171D26;--surface-2:#1D2430;--ink:#E6EAF2;--muted:#94A3BD;--line:#2A3240;--accent:#7FA2F5;--accent-soft:#1A2747;
   --shadow:0 4px 12px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
 html{background:var(--ground)}
-body{margin:0;background:var(--ground);color:var(--ink);font-family:"Poppins",system-ui,sans-serif;font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 15px/1.6 Poppins,system-ui,sans-serif;overflow-wrap:anywhere}
 .page{max-width:880px;margin:0 auto;padding:20px 16px 32px;display:flex;flex-direction:column;gap:28px}
+svg{max-width:100%;height:auto}
 h1{font-weight:800;font-size:clamp(30px,5.2vw,46px);line-height:1.1;margin:0}
-h2{font-weight:700;font-size:1.35rem;margin:0 0 14px}
+h2{font-weight:700;font-size:1.35rem;margin:0 0 12px}
 h3{font-weight:600;font-size:1rem;margin:0}
 p{margin:0}
-svg{max-width:100%;height:auto;display:block}
-.masthead{display:flex;align-items:center;gap:14px}
-.wordmark{font-weight:800;font-size:1.6rem;color:var(--accent);text-transform:lowercase;line-height:1}
-.sep{width:1px;align-self:stretch;min-height:24px;background:var(--line)}
-.mast-sub{font-size:.8rem;color:var(--muted)}
-.poster{position:relative;overflow:hidden;background:linear-gradient(160deg,#2A56D4,#1E43B8);color:#FFF;border-radius:28px;padding:28px;display:flex;flex-wrap:wrap;gap:24px;align-items:center}
-.poster::after{content:"";position:absolute;right:-80px;bottom:-100px;width:320px;height:320px;background:radial-gradient(circle,rgba(255,213,74,.55),rgba(255,213,74,0) 70%);pointer-events:none}
-.poster-text{flex:1 1 280px;position:relative;z-index:1}
+.mast{display:flex;align-items:center;gap:12px}
+.mast .w{font-weight:800;font-size:1.6rem;color:var(--accent);letter-spacing:-.5px;line-height:1}
+.mast .sep{width:1px;align-self:stretch;background:var(--line);min-height:22px}
+.mast .t{font-size:.8rem;color:var(--muted)}
+.poster{position:relative;overflow:hidden;background:linear-gradient(160deg,#2A56D4,#1E43B8);color:#fff;border-radius:28px;padding:28px;display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:center}
+.poster:after{content:"";position:absolute;right:-80px;bottom:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(255,213,74,.5),rgba(255,213,74,0) 65%);pointer-events:none}
+.poster>*{position:relative;z-index:1}
 .poster h1{color:#FFD54A;margin-bottom:12px}
-.poster .sub{font-weight:700;color:#FFF;font-size:1.05rem;margin-bottom:10px}
-.poster .analogy{color:rgba(255,255,255,.88);font-size:.95rem}
-.poster-art{flex:0 1 230px;margin:0 auto;position:relative;z-index:1;width:230px;max-width:100%}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}
-.pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:.75rem;font-weight:700;line-height:1.6;white-space:nowrap}
-.m1{background:var(--accent);color:var(--on-accent)}
+.poster .sub{font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.poster .ana{color:rgba(255,255,255,.88)}
+.phone{border:2px solid rgba(255,255,255,.38);background:rgba(255,255,255,.14);border-radius:34px;padding:10px;justify-self:center;width:100%;max-width:220px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+.flow{padding:12px}
+.flow svg{display:block;width:100%}
+.route{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;position:relative}
+.stop{display:grid;grid-template-columns:34px 1fr;gap:12px}
+.dot{display:flex;flex-direction:column;align-items:center}
+.dot b{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex:none}
+.dot i{flex:1;width:2px;background:var(--line);margin-top:4px}
+.stop:last-child .dot i{display:none}
+.stop .card{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.time{font-size:.8rem;color:var(--muted)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:700;line-height:1.5}
+.m1{background:var(--accent);color:#fff}
 .m2{background:#FFD54A;color:#161F28}
 .here{background:#FFD54A;color:#161F28}
-.flow{padding:12px}
-.flow svg{width:100%}
-.stops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;position:relative}
-.stop{display:flex;gap:14px;position:relative}
-.stop:not(:last-child)::before{content:"";position:absolute;left:19px;top:40px;bottom:-14px;width:2px;background:var(--line)}
-.dot{flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;z-index:1}
-.stop-body{flex:1;min-width:0}
-.stop-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
-.time{font-size:.8rem;color:var(--muted)}
-.stop-body p{font-weight:500}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.tile{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.tile{display:flex;flex-direction:column;gap:10px}
 .ico{width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
 .ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.tile-pills{display:flex;gap:6px;flex-wrap:wrap}
-.for{font-size:.88rem;color:var(--ink)}
-.for .pill{margin-right:6px;vertical-align:1px}
-.nexts{display:flex;flex-direction:column;gap:14px}
-.next{display:flex;gap:12px;align-items:flex-start}
-.next .pill{margin-top:2px}
+.who{display:flex;flex-direction:column;gap:2px}
+.who p{font-size:.9rem}
+.next{display:flex;flex-direction:column;gap:12px}
+.next .card{display:flex;flex-direction:column;gap:8px}
 footer{border-top:1px solid var(--line);padding-top:14px;font-size:.8rem;color:var(--muted)}
-.t{fill:var(--ink);font-family:"Poppins",system-ui,sans-serif}
-.tm{fill:var(--muted);font-family:"Poppins",system-ui,sans-serif}
+@media (max-width:620px){.poster{grid-template-columns:1fr;padding:22px}.phone{max-width:200px}}
 </style>
 </head>
 <body>
 <div class="page">
 
-<header class="masthead">
-  <span class="wordmark">pago</span>
-  <span class="sep"></span>
-  <span class="mast-sub">AI Hackathon · Pago Voice</span>
+<header class="mast">
+  <span class="w">pago</span><span class="sep"></span><span class="t">AI Hackathon · Pago Voice</span>
 </header>
 
 <section class="poster" aria-label="Ce construim">
-  <div class="poster-text">
+  <div>
     <h1>Pago Voice</h1>
     <p class="sub">Un asistent AI vocal pentru aplicația Pago.</p>
-    <p class="analogy">E ca un prieten care stă în telefon. Îi spui ce vrei, el găsește facturile, le strânge într-un coș și le plătești cu Face ID sau PIN.</p>
+    <p class="ana">E ca un prieten care ține facturile tale. Îl întrebi, el răspunde. Îi spui „plătește” și gata.</p>
   </div>
-  <div class="poster-art">
-    <svg viewBox="0 0 230 300" role="img" aria-label="Un telefon cu o bulă AI care vorbește, o factură și un coș">
-      <rect x="15" y="8" width="200" height="284" rx="34" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.38)" stroke-width="2.2"/>
-      <rect x="92" y="20" width="46" height="6" rx="3" fill="rgba(255,255,255,.38)"/>
-      <g fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="115" cy="82" r="30" stroke="#FFD54A"/>
-        <path d="M100 82v0M108 74v16M116 69v26M124 74v16M132 82v0" stroke="#FFD54A"/>
-        <path d="M60 150a10 10 0 0 1 10-10h90a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10H90l-16 14v-14h-4a10 10 0 0 1-10-10z" stroke="#FFF"/>
-        <path d="M76 154h60M76 166h38" stroke="#FFF"/>
-        <path d="M70 232h88l-8 30H78z" stroke="#FFD54A"/>
-        <path d="M82 232l8-14M146 232l-8-14" stroke="#FFD54A"/>
-        <path d="M95 244v8M114 244v8M133 244v8" stroke="#FFF"/>
-      </g>
+  <div class="phone">
+    <svg viewBox="0 0 180 280" role="img" aria-label="Telefon cu bulă de voce, coș și bifă" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="40" y="8" width="100" height="264" rx="22" stroke="#fff" stroke-width="2.2"/>
+      <line x1="76" y1="22" x2="104" y2="22" stroke="#fff" stroke-width="2.2"/>
+      <circle cx="90" cy="82" r="26" stroke="#FFD54A" stroke-width="2.2"/>
+      <rect x="84" y="66" width="12" height="20" rx="6" stroke="#FFD54A" stroke-width="2.2"/>
+      <path d="M78 82a12 12 0 0 0 24 0M90 94v8" stroke="#FFD54A" stroke-width="2.2"/>
+      <path d="M62 128q4-10 14-10M118 128q-4-10-14-10" stroke="#fff" stroke-width="2.2"/>
+      <path d="M58 150h64l-8 34H66z" stroke="#fff" stroke-width="2.2"/>
+      <circle cx="74" cy="198" r="4" stroke="#fff" stroke-width="2.2"/>
+      <circle cx="108" cy="198" r="4" stroke="#fff" stroke-width="2.2"/>
+      <circle cx="90" cy="236" r="16" stroke="#FFD54A" stroke-width="2.2"/>
+      <path d="M82 236l6 6 10-12" stroke="#FFD54A" stroke-width="2.2"/>
     </svg>
   </div>
 </section>
 
-<section aria-labelledby="h-idee">
-  <h2 id="h-idee">Problemă → Idee → Demo</h2>
+<section aria-label="Problemă, idee, demo">
+  <h2>Problemă → Idee → Demo</h2>
   <div class="card flow">
-    <svg viewBox="0 0 760 250" role="img" aria-label="Problemă: facturi multe. Idee: asistent AI vocal. Demo: coș, Face ID sau PIN și factură PDF.">
-      <defs>
-        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
-      </defs>
-      <g fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="10" y="10" width="220" height="230" rx="18" fill="var(--surface-2)" stroke="var(--line)"/>
-        <rect x="270" y="10" width="220" height="230" rx="18" fill="var(--surface-2)" stroke="var(--line)"/>
-        <rect x="530" y="10" width="220" height="230" rx="18" fill="var(--surface-2)" stroke="var(--line)"/>
-      </g>
-      <g stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#ah)">
-        <path d="M232 125H266"/>
-        <path d="M492 125H526"/>
-      </g>
-      <!-- 1 Problema -->
-      <text class="tm" x="30" y="40" font-size="13" font-weight="700">1 · PROBLEMA</text>
-      <g fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="48" y="70" width="60" height="76" rx="6" transform="rotate(-8 78 108)"/>
-        <rect x="88" y="66" width="60" height="76" rx="6" transform="rotate(6 118 104)"/>
-        <rect x="68" y="76" width="60" height="76" rx="6" fill="var(--surface)"/>
-        <path d="M78 96h40M78 108h40M78 120h24"/>
-        <path d="M168 76q10-12 20 0M178 90v4"/>
-      </g>
-      <text class="t" x="120" y="190" font-size="14" font-weight="600" text-anchor="middle">Facturi multe</text>
-      <text class="tm" x="120" y="210" font-size="12" text-anchor="middle">de strâns și de plătit</text>
-      <!-- 2 Ideea -->
-      <text class="tm" x="290" y="40" font-size="13" font-weight="700">2 · IDEEA</text>
-      <g fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="380" cy="106" r="38"/>
-        <path d="M356 106v0M368 94v24M380 86v40M392 94v24M404 106v0"/>
-        <path d="M340 156q40 24 80 0"/>
-      </g>
-      <text class="t" x="380" y="190" font-size="14" font-weight="600" text-anchor="middle">Asistent AI vocal</text>
-      <text class="tm" x="380" y="210" font-size="12" text-anchor="middle">o bulă care răspunde</text>
-      <!-- 3 Demo -->
-      <text class="tm" x="550" y="40" font-size="13" font-weight="700">3 · DEMO</text>
-      <g fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M562 78h60l-6 34h-48z"/>
-        <path d="M572 78l6-10M612 78l-6-10"/>
-        <rect x="640" y="68" width="38" height="52" rx="5"/>
-        <path d="M648 84h22M648 94h22M648 104h12"/>
-        <circle cx="700" cy="96" r="14"/>
-        <path d="M694 96l5 5 8-10"/>
-      </g>
-      <text class="t" x="640" y="190" font-size="14" font-weight="600" text-anchor="middle">Coș + Face ID sau PIN</text>
-      <text class="tm" x="640" y="210" font-size="12" text-anchor="middle">și factura în PDF</text>
+    <svg viewBox="0 0 720 230" role="img" aria-label="Trei pași: facturi multe, bulă AI cu voce, plată cu Face ID sau PIN" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" font-family="Poppins,system-ui,sans-serif">
+      <rect x="6" y="6" width="214" height="218" rx="18" fill="var(--surface-2)" stroke="var(--line)"/>
+      <rect x="253" y="6" width="214" height="218" rx="18" fill="var(--surface-2)" stroke="var(--line)"/>
+      <rect x="500" y="6" width="214" height="218" rx="18" fill="var(--surface-2)" stroke="var(--line)"/>
+      <path d="M226 115h20m-7-7 7 7-7 7M473 115h20m-7-7 7 7-7 7" stroke="var(--muted)"/>
+      <!-- 1 problema -->
+      <rect x="58" y="44" width="70" height="86" rx="6"/>
+      <rect x="82" y="34" width="70" height="86" rx="6" fill="var(--surface-2)"/>
+      <path d="M94 56h46M94 72h46M94 88h30"/>
+      <path d="M150 120l10 10m0-10l-10 10" stroke="var(--ink)"/>
+      <text x="113" y="168" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="12">PROBLEMĂ</text>
+      <text x="113" y="190" text-anchor="middle" fill="var(--ink)" stroke="none" font-size="14" font-weight="600">Facturi multe</text>
+      <text x="113" y="208" text-anchor="middle" fill="var(--ink)" stroke="none" font-size="14" font-weight="600">de plătit</text>
+      <!-- 2 idee -->
+      <path d="M330 40h74a14 14 0 0 1 14 14v40a14 14 0 0 1-14 14h-40l-18 16v-16h-16a14 14 0 0 1-14-14V54a14 14 0 0 1 14-14z" transform="translate(-6 0)"/>
+      <path d="M338 74h12M356 62v24M368 68v12M380 62v24M392 74h6" stroke="var(--ink)"/>
+      <text x="360" y="168" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="12">IDEE</text>
+      <text x="360" y="190" text-anchor="middle" fill="var(--ink)" stroke="none" font-size="14" font-weight="600">Bula AI vorbește</text>
+      <text x="360" y="208" text-anchor="middle" fill="var(--ink)" stroke="none" font-size="14" font-weight="600">și strânge coșul</text>
+      <!-- 3 demo -->
+      <rect x="574" y="30" width="66" height="104" rx="12"/>
+      <circle cx="607" cy="82" r="16"/>
+      <path d="M599 82l6 6 10-12" stroke="var(--ink)"/>
+      <text x="607" y="168" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="12">DEMO</text>
+      <text x="607" y="190" text-anchor="middle" fill="var(--ink)" stroke="none" font-size="14" font-weight="600">Plătești cu</text>
+      <text x="607" y="208" text-anchor="middle" fill="var(--ink)" stroke="none" font-size="14" font-weight="600">Face ID sau PIN</text>
     </svg>
   </div>
 </section>
 
-<section aria-labelledby="h-traseu">
-  <h2 id="h-traseu">Traseul</h2>
-  <ol class="stops">
-    <li class="stop">
-      <div class="dot">1</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m1">M1</span><span class="time">10:28 16.11.2026</span></div>
-        <p>Pagina de progres pornește; repo-ul are 2 commit-uri, restul e încă nou</p>
-      </div>
-    </li>
-    <li class="stop">
-      <div class="dot">2</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 12:42 (ora României)</span></div>
-        <p>Overlay-ul AI și pagina principală sunt gata, urmează verificarea în browser</p>
-      </div>
-    </li>
-    <li class="stop">
-      <div class="dot">3</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 13:37 (ora României)</span></div>
-        <p>Bula AI reacționează la voce, iar istoricul facturilor semnalează sumele neobișnuite</p>
-      </div>
-    </li>
-    <li class="stop">
-      <div class="dot">4</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 15:37 (ora României)</span></div>
-        <p>Coșul de plată cu Face ID sau PIN este gata, iar aplicația vorbește română</p>
-      </div>
-    </li>
-    <li class="stop">
-      <div class="dot">5</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 22:34 (ora României)</span></div>
-        <p>Conflictul de merge cu ramura principală este rezolvat, dar commit-ul așteaptă permisiune</p>
-      </div>
-    </li>
-    <li class="stop">
-      <div class="dot">6</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 23:37 (ora României)</span></div>
-        <p>Merge-ul cu ramura principală este trimis, păstrăm coșul nostru și AI-ul trebuie să primească cheia</p>
-      </div>
-    </li>
-    <li class="stop">
-      <div class="dot">7</div>
-      <div class="card stop-body">
-        <div class="stop-head"><span class="pill m2">M2</span><span class="time">17 noiembrie 2026, 01:37 (ora României)</span><span class="pill here">Ești aici</span></div>
-        <p>Vizualizatorul de facturi și dicționarul de intenții sunt gata, iar conflictul cu mute-ul este rezolvat</p>
-      </div>
-    </li>
+<section aria-label="Traseul">
+  <h2>Traseul</h2>
+  <ol class="route">
+    <li class="stop"><div class="dot"><b>1</b><i></i></div><div class="card"><div class="row"><span class="pill m1">M1</span><span class="time">10:28 16.11.2026</span></div><h3>Pagina de progres pornește; repo-ul are 2 commit-uri, restul e încă nou</h3></div></li>
+    <li class="stop"><div class="dot"><b>2</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 12:42 (ora României)</span></div><h3>Overlay-ul AI și pagina principală sunt gata, urmează verificarea în browser</h3></div></li>
+    <li class="stop"><div class="dot"><b>3</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 13:37 (ora României)</span></div><h3>Bula AI reacționează la voce, iar istoricul facturilor semnalează sumele neobișnuite</h3></div></li>
+    <li class="stop"><div class="dot"><b>4</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 15:37 (ora României)</span></div><h3>Coșul de plată cu Face ID sau PIN este gata, iar aplicația vorbește română</h3></div></li>
+    <li class="stop"><div class="dot"><b>5</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 22:34 (ora României)</span></div><h3>Conflictul de merge cu ramura principală este rezolvat, dar commit-ul așteaptă permisiune</h3></div></li>
+    <li class="stop"><div class="dot"><b>6</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">16 noiembrie 2026, 23:37 (ora României)</span></div><h3>Merge-ul cu ramura principală este trimis, păstrăm coșul nostru și AI-ul trebuie să primească cheia</h3></div></li>
+    <li class="stop"><div class="dot"><b>7</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">17 noiembrie 2026, 01:37 (ora României)</span></div><h3>Vizualizatorul de facturi și dicționarul de intenții sunt gata, iar conflictul cu mute-ul este rezolvat</h3></div></li>
+    <li class="stop"><div class="dot"><b>8</b><i></i></div><div class="card"><div class="row"><span class="pill m2">M2</span><span class="time">17 noiembrie 2026, 13:37 (ora României)</span><span class="pill here">Ești aici</span></div><h3>Asistentul poartă o conversație mai bună: întreabă ce plătim, plătește tot și avertizează asupra sumelor mari</h3></div></li>
   </ol>
 </section>
 
-<section aria-labelledby="h-claude">
-  <h2 id="h-claude">Cum folosim Claude</h2>
+<section aria-label="Cum folosim Claude">
+  <h2>Cum folosim Claude</h2>
   <div class="tiles">
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></div>
-      <h3>Claude Code</h3>
-      <div class="tile-pills"><span class="pill m1">M1</span><span class="pill m2">M2</span></div>
-      <p class="for"><span class="pill m1">M1</span>citirea și scrierea fișierelor din repo, comenzi git și un plan de lucru pas cu pas</p>
-      <p class="for"><span class="pill m2">M2</span>A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi și dicționarul de intenții.</p>
-    </article>
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 8h6M9 12h6"/></svg></div>
-      <h3>Documentația Next.js din proiect</h3>
-      <div class="tile-pills"><span class="pill m2">M2</span></div>
-      <p class="for">Am citit-o înainte de a scrie cod, pentru că AGENTS.md cerea asta, și am găsit opțiunea de origini de dezvoltare permise pentru tunel.</p>
-    </article>
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M7 6.5v0M10 6.5v0"/></svg></div>
-      <h3>Browserul din aplicație</h3>
-      <div class="tile-pills"><span class="pill m2">M2</span></div>
-      <p class="for">Am deschis pagina prin tunel și am citit consola ca să aflu de ce nu răspundeau butoanele.</p>
-    </article>
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17M12 6h8M12 12h8M12 18h8"/></svg></div>
-      <h3>Lista de pași</h3>
-      <div class="tile-pills"><span class="pill m2">M2</span></div>
-      <p class="for">Am ținut vizibil ce urmează în fiecare sarcină.</p>
-    </article>
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9 13v0M15 13v0M9 16h6"/></svg></div>
-      <h3>Subagent</h3>
-      <div class="tile-pills"><span class="pill m2">M2</span></div>
-      <p class="for">Generează pagina de progres pornind de la starea echipei, de fiecare dată când se actualizează.</p>
-    </article>
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
-      <h3>Citirea unui artefact publicat</h3>
-      <div class="tile-pills"><span class="pill m2">M2</span></div>
-      <p class="for">Am convertit în HTML pagina de progres a celuilalt membru și am unit cele două stări.</p>
-    </article>
-    <article class="card tile">
-      <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/></svg></div>
-      <h3>Sarcină programată</h3>
-      <div class="tile-pills"><span class="pill m2">M2</span></div>
-      <p class="for">Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă.</p>
-    </article>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></div>
+      <div class="row"><h3>Claude Code</h3><span class="pill m1">M1</span><span class="pill m2">M2</span></div>
+      <div class="who"><span class="pill m1" style="align-self:flex-start">M1</span><p>citirea și scrierea fișierelor din repo, comenzi git și un plan de lucru pas cu pas</p></div>
+      <div class="who"><span class="pill m2" style="align-self:flex-start">M2</span><p>A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi, dicționarul de intenții și conversația cu întrebări de urmărire.</p></div>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 8h6"/></svg></div>
+      <div class="row"><h3>Documentația Next.js din proiect</h3><span class="pill m2">M2</span></div>
+      <p>Am citit-o înainte de a scrie cod, pentru că AGENTS.md cerea asta, și am găsit opțiunea de origini de dezvoltare permise pentru tunel.</p>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M7 6.5h.01M10 6.5h.01"/></svg></div>
+      <div class="row"><h3>Browserul din aplicație</h3><span class="pill m2">M2</span></div>
+      <p>Am deschis pagina prin tunel și am citit consola ca să aflu de ce nu răspundeau butoanele.</p>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></div>
+      <div class="row"><h3>Lista de pași</h3><span class="pill m2">M2</span></div>
+      <p>Am ținut vizibil ce urmează în fiecare sarcină.</p>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 16h6"/></svg></div>
+      <div class="row"><h3>Subagent</h3><span class="pill m2">M2</span></div>
+      <p>Generează pagina de progres pornind de la starea echipei, de fiecare dată când se actualizează.</p>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg></div>
+      <div class="row"><h3>Citirea unui artefact publicat</h3><span class="pill m2">M2</span></div>
+      <p>Am convertit în HTML pagina de progres a celuilalt membru și am unit cele două stări.</p>
+    </div>
+    <div class="card tile">
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 8v5l3 2M9 2h6"/></svg></div>
+      <div class="row"><h3>Sarcină programată</h3><span class="pill m2">M2</span></div>
+      <p>Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă.</p>
+    </div>
   </div>
 </section>
 
-<section aria-labelledby="h-next">
-  <h2 id="h-next">Pasul următor</h2>
-  <div class="card nexts">
-    <div class="next"><span class="pill m1">M1</span><p>Pasul următor nu a fost formulat în această sesiune; pagina de progres este pasul curent.</p></div>
-    <div class="next"><span class="pill m2">M2</span><p>Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, apoi să testez pe telefon vizualizatorul de facturi, coșul și plata.</p></div>
+<section aria-label="Pasul următor">
+  <h2>Pasul următor</h2>
+  <div class="next">
+    <div class="card"><span class="pill m1" style="align-self:flex-start">M1</span><p>Pasul următor nu a fost formulat în această sesiune; pagina de progres este pasul curent.</p></div>
+    <div class="card"><span class="pill m2" style="align-self:flex-start">M2</span><p>Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, să comit modificările, apoi să testez pe telefon conversația, plata și vizualizatorul de facturi.</p></div>
   </div>
 </section>
 
@@ -316,6 +242,12 @@ footer{border-top:1px solid var(--line);padding-top:14px;font-size:.8rem;color:v
       "member": 2,
       "time": "17 noiembrie 2026, 01:37 (ora României)",
       "headline": "Vizualizatorul de facturi și dicționarul de intenții sunt gata, iar conflictul cu mute-ul este rezolvat"
+    },
+    {
+      "n": 8,
+      "member": 2,
+      "time": "17 noiembrie 2026, 13:37 (ora României)",
+      "headline": "Asistentul poartă o conversație mai bună: întreabă ce plătim, plătește tot și avertizează asupra sumelor mari"
     }
   ],
   "members": {
@@ -333,12 +265,12 @@ footer{border-top:1px solid var(--line);padding-top:14px;font-size:.8rem;color:v
     },
     "2": {
       "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, un coș în care strângi mai multe facturi, o plată confirmată cu Face ID sau PIN și vizualizarea facturii în format PDF.",
-      "works": "Coșul și plata funcționează prin voce sau text. Vizualizatorul deschide pentru fiecare furnizor o factură de test, cu detalii specifice și totaluri care se potrivesc cu suma facturii. Recunoașterea intențiilor este într-un dicționar, iar răspunsurile sunt în română. Merge-ul cu ramura principală este făcut, iar funcția de mut din ramura principală a fost păstrată împreună cu vizualizatorul. Nimic din acestea nu a fost verificat cu npm run build sau lint după ultimele modificări.",
-      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu funcționează încă. Vizualizatorul de facturi nu a fost testat pe telefon. Logo-urile din facturi sunt marcaje generice, nu logo-uri reale.",
+      "works": "Coșul și plata funcționează prin voce sau text. Vizualizatorul deschide o factură de test pentru fiecare furnizor. Asistentul întreabă acum dacă vrei să plătești ceva, poate plăti toate facturile, adaugă mai multe facturi odată și avertizează asupra sumelor neobișnuite. Răspunsul AI are un format structurat. Modificările din ultima sesiune nu sunt încă comise, iar nimic din acestea nu a fost verificat cu npm run build sau lint.",
+      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu funcționează încă. Node.js nu este accesibil din sesiunea mea, deci nu pot rula build-ul. Vizualizatorul de facturi și conversația nu au fost testate pe telefon.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi și dicționarul de intenții."
+          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi, dicționarul de intenții și conversația cu întrebări de urmărire."
         },
         {
           "name": "Documentația Next.js din proiect",
@@ -365,7 +297,7 @@ footer{border-top:1px solid var(--line);padding-top:14px;font-size:.8rem;color:v
           "for": "Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă."
         }
       ],
-      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, apoi să testez pe telefon vizualizatorul de facturi, coșul și plata."
+      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, să comit modificările, apoi să testez pe telefon conversația, plata și vizualizatorul de facturi."
     }
   }
 }
