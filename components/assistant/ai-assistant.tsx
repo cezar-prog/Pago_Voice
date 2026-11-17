@@ -70,7 +70,7 @@ function MuteButton() {
       onClick={toggleAssistantMute}
       aria-pressed={isAssistantMuted}
       aria-label={isAssistantMuted ? "Pornește vocea asistentului" : "Oprește vocea asistentului"}
-      className={`absolute top-6 right-6 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 backdrop-blur-2xl transition-colors ${
+      className={`mt-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 backdrop-blur-2xl transition-colors ${
         isAssistantMuted ? "bg-white/5 text-white/35" : "bg-white/10 text-white/70"
       }`}
     >
@@ -95,7 +95,6 @@ function AssistantOverlay() {
       aria-modal="true"
       aria-label="Asistentul Pago"
     >
-      <MuteButton />
       {/* Soft light rising from the bottom edge. */}
       <div
         aria-hidden
@@ -131,6 +130,8 @@ function AssistantOverlay() {
           >
             <SiriOrb status={status} level={meter.level} />
           </motion.div>
+
+          <MuteButton />
 
           {listening && <LevelMeter level={meter.level} zone={meter.zone} error={meter.error} />}
           <Caption status={status} text={liveTranscript} compact={expanded} />
