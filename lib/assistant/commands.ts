@@ -1,8 +1,10 @@
-import { CURRENT_PERIOD } from "./bill-history";
+import { CURRENT_PERIOD, MOCK_HISTORY, detectBillAnomalies, type ProviderHistory } from "./bill-history";
 import { answerBillQuestion } from "./bills";
 import { formatRon, plural } from "./format";
-import { detectIntent, type IntentName } from "./intents";
+import { ALL_WORDS, detectIntent, type IntentName } from "./intents";
+import { meansAll, resolveEntities } from "./entities";
 import { normalizeSpeech } from "./text";
+import type { AssistantReply } from "@/lib/types";
 import type { AssistantCommands, Bill, CartBill, ChatMessage } from "./types";
 
 // Local Romanian router for the cart, checkout and invoice actions. The intents
@@ -168,12 +170,105 @@ export function localReply(input: string, c: AssistantCommands, history: ChatMes
 
   // Stateful follow-up: we just asked "Vrei să plătim ceva acum?".
   if (isAwaitingPaymentChoice(history)) {
+    if (ALL_WORDS.includes(q)) return HANDLERS.PAY_ALL(q, c);
     const matched = findBills(q, c.bills);
     if (matched.length > 0) return addBills(matched, c);
     if (YES_WORDS.includes(q)) return "Spune ce factură vrei să plătești, de exemplu Enel sau Digi.";
     if (NO_WORDS.includes(q)) return "Bine, nu plătim acum.";
   }
   return null;
+}
+
+/**
+ * Carries out the action the AI chose for a TRANSACTIONAL message. The AI is the router:
+ * this only applies its decision to bills that exist in the app.
+ */
+export function runAiAction(action: string, targets: string[], c: AssistantCommands): void {
+  const bills = targets
+    .map((id) => c.bills.find((b) => b.id === id))
+    .filter((b): b is Bill => b !== undefined);
+
+  switch (action) {
+    case "PAY_ALL":
+      HANDLERS.PAY_ALL("", c);
+      return;
+    case "PREPARE_PAYMENT":
+      addBills(bills.slice(0, 1), c);
+      c.openCheckout();
+      return;
+    case "ADD_TO_CART":
+      addBills(bills, c);
+      return;
+    case "REMOVE_FROM_CART":
+      for (const b of bills) c.removeBillFromCart(b.id);
+      return;
+    case "OPEN_INVOICE":
+      if (bills[0]) c.openInvoice(bills[0]);
+      return;
+    case "CLEAR_CART":
+      c.clearCart();
+      return;
+    case "CHECKOUT":
+      c.openCheckout();
+      return;
+    default:
+      // NONE, CLOSE, VIEW_CART, VIEW_MONTH_BILLS, UNPAID_BILLS: the reply text is the answer.
+      return;
+  }
+}
+
+/**
+ * Client-side execution of the AI's structured reply. Acts only when triage is
+ * TRANSACTIONAL and the action is not NONE. Nothing here changes the spoken responseText.
+ */
+export function executeAssistantReply(reply: AssistantReply, c: AssistantCommands): void {
+  if (reply.triage !== "TRANSACTIONAL" || reply.action === "NONE") return;
+
+  const unpaid = c.bills.filter((b) => b.status === "due");
+  const named = meansAll(reply.targetEntities)
+    ? unpaid
+    : resolveEntities(reply.targetEntities, c.bills);
+
+  switch (reply.action) {
+    case "PAY_ALL":
+      runAiAction("PAY_ALL", [], c);
+      return;
+    case "ADD_SPECIFIC":
+      runAiAction("ADD_TO_CART", named.map((b) => b.id), c);
+      return;
+    case "SHOW_SPECIFIC":
+      runAiAction("OPEN_INVOICE", named.slice(0, 1).map((b) => b.id), c);
+      return;
+    case "SHOW_ALL":
+      // The list is in the spoken text; nothing else to open.
+      return;
+  }
+}
+
+/** True when the message asks for all invoices this month ("Ce facturi am luna asta?"). */
+export function isShowAllMonth(input: string): boolean {
+  return detectIntent(normalizeSpeech(input))?.intent === "VIEW_MONTH_BILLS";
+}
+
+/**
+ * Warning for this month's bills whose amount is unusually high compared with their usual
+ * amount. Null when none is flagged.
+ */
+export function suspiciousBillWarning(
+  bills: Bill[],
+  histories: ProviderHistory[] = MOCK_HISTORY,
+): string | null {
+  const monthProviders = new Set(
+    bills.filter((b) => b.dueDate.startsWith(CURRENT_PERIOD)).map((b) => b.provider),
+  );
+  const flagged = detectBillAnomalies(histories).filter((a) => monthProviders.has(a.provider));
+  if (flagged.length === 0) return null;
+  return flagged
+    .map(
+      (a) =>
+        `Atenție, factura la ${a.provider} este neobișnuit de mare luna aceasta (${formatRon(a.amount)}, de obicei ${formatRon(a.expected)}).`,
+    )
+    .join(" ");
 }
 
 /** Answers one user message. Local actions first, then the intent handlers, then the bill answers. */

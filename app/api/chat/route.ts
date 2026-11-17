@@ -1,9 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { ChatReply } from '@/lib/types';
+import type { AssistantReply } from '@/lib/types';
 import {
   buildSystemPrompt,
   MODEL,
-  parseAssistantReply,
+  parseStructuredReply,
   readChatRequest,
   RESPONSE_SCHEMA,
   type ChatRequest,
@@ -22,12 +22,16 @@ const NOT_CONNECTED_REPLY =
 
 type Provider = 'gemini' | 'anthropic' | 'none';
 
-function reply(body: ChatReply, status = 200) {
+function reply(body: AssistantReply, status = 200) {
   return Response.json(body, { status });
 }
 
+/** An error reply in the same strict shape: the app shows responseText and runs no action. */
 function failure(text: string, status: number) {
-  return reply({ reply: text, action: 'NONE', billId: null }, status);
+  return reply(
+    { thinking: '', triage: 'UNKNOWN', action: 'NONE', targetEntities: [], responseText: text },
+    status,
+  );
 }
 
 function pickProvider(): Provider {
@@ -43,11 +47,12 @@ async function askClaude(apiKey: string, system: string, input: ChatRequest['mes
   const client = new Anthropic({ apiKey });
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 1024,
+    // Room for the "thinking" field, which the model writes before the action.
+    max_tokens: 2048,
     system,
     messages: input,
     output_config: {
-      effort: 'low',
+      effort: 'medium',
       format: { type: 'json_schema', schema: RESPONSE_SCHEMA },
     },
   });
@@ -83,7 +88,7 @@ export async function POST(request: Request) {
 
     if (text === null) return failure(REFUSAL_REPLY, 200);
 
-    const parsed = parseAssistantReply(text, input.bills);
+    const parsed = parseStructuredReply(text);
     return parsed ? reply(parsed) : failure(NOT_UNDERSTOOD, 200);
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) {

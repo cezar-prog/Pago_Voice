@@ -1,12 +1,16 @@
-// Intent recognition for the local (mock) assistant.
+// The assistant's action catalogue, plus the offline keyword router.
+//
+// The AI is the primary router for every message: it classifies the message as
+// TRANSACTIONAL, INFORMATIONAL or OUT_OF_SCOPE and picks the action from this list. The
+// keyword matching below is used only when the AI is unavailable (offline fallback), and it
+// never runs before the AI.
 //
 // Each entry is one intent. Keywords are matched against the message after normalizeSpeech():
 // lowercase, no diacritics, no punctuation. A keyword is either a plain string (substring match)
 // or a RegExp. Entries are checked in order and the first match wins, so put more specific
 // intents first.
 //
-// `local: true` means the message is handled here and never sent to the AI endpoint
-// (cart, checkout and invoice actions must always change the app state).
+// `local: true` marks an action the offline router can carry out without the AI.
 
 export type IntentName =
   | "PAY_ALL"
@@ -21,6 +25,13 @@ export type IntentName =
 
 export type Keyword = string | RegExp;
 
+/** Shown when no intent or answer matches, so the assistant never stays silent. */
+export const FALLBACK_REPLY =
+  "Bună, sunt asistentul tău vocal Pago. Te pot ajuta să vizualizezi sau să plătești facturile. Cu ce te pot ajuta?";
+
+/** Words that mean "everything", used only right after the payment follow-up question. */
+export const ALL_WORDS = ["tot", "toate", "toate facturile", "tot le"];
+
 export interface IntentDefinition {
   intent: IntentName;
   description: string;
@@ -33,7 +44,11 @@ export const INTENT_DICTIONARY: IntentDefinition[] = [
     // Must come before CHECKOUT, which also matches "plateste".
     intent: "PAY_ALL",
     description: "Selectează toate facturile neplătite, le adaugă în coș și deschide plata imediat.",
-    keywords: [/\bplateste (tot|toate)\b/, "plateste tot", "pay everything", "pay all"],
+    keywords: [
+      /\b(plateste|platesc|platim|plati) (tot|toate)\b/,
+      "pay everything",
+      "pay all",
+    ],
     local: true,
   },
   {

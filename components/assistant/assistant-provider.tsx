@@ -12,6 +12,7 @@ import {
 } from "react";
 import { defaultAdapters } from "@/lib/assistant/adapters";
 import { MOCK_BILLS } from "@/lib/assistant/bills";
+import { FALLBACK_REPLY } from "@/lib/assistant/intents";
 import { playWakeChime } from "@/lib/assistant/chime";
 import { extractWakeRest, isClosePhrase } from "@/lib/assistant/text";
 import { throttleLatest } from "@/lib/assistant/throttle";
@@ -178,7 +179,11 @@ export function AssistantProvider({
     [pushMessage],
   );
 
-  const open = useCallback(() => openAssistant(true), [openAssistant]);
+  // A tap on the open button: unlock audio inside the tap so the spoken welcome can play on iPhone.
+  const open = useCallback(() => {
+    adaptersRef.current.unlockAudio?.();
+    openAssistant(true);
+  }, [openAssistant]);
 
   // ---- Payment cart ------------------------------------------------------
 
@@ -259,7 +264,13 @@ export function AssistantProvider({
         openInvoice,
         setDirective,
       };
-      const reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
+      // Never leave the loader running: if answering throws, show the fallback instead.
+      let reply: string;
+      try {
+        reply = await adaptersRef.current.respond(text, messagesRef.current, commands);
+      } catch {
+        reply = FALLBACK_REPLY;
+      }
       if (turn !== turnRef.current) return;
 
       pushMessage("assistant", reply);
@@ -283,10 +294,12 @@ export function AssistantProvider({
   }, [handleUtterance]);
 
   const sendText = useCallback((text: string) => {
+    adaptersRef.current.unlockAudio?.();
     void handleUtteranceRef.current(text);
   }, []);
 
   const toggleMic = useCallback(() => {
+    adaptersRef.current.unlockAudio?.();
     setMicOn((on) => !on);
     setLiveTranscript("");
     setLastActivity(Date.now());

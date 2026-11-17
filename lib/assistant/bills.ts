@@ -1,5 +1,6 @@
 import type { Bill } from "./types";
 import { normalizeSpeech } from "./text";
+import { FALLBACK_REPLY } from "./intents";
 import { CATEGORY_LABEL_RO, formatDateRo, formatRon, plural } from "./format";
 import {
   MOCK_HISTORY,
@@ -23,7 +24,7 @@ export const MOCK_BILLS: Bill[] = [
   { id: "b11", provider: "Abonament sala", amount: 120, currency: "RON", dueDate: "2026-11-01", status: "paid", category: "other" },
 ];
 
-const CATEGORY_KEYWORDS: Record<Bill["category"], string[]> = {
+export const CATEGORY_KEYWORDS: Record<Bill["category"], string[]> = {
   auto: ["auto", "masina", "car", "rca", "rovinieta"],
   house: ["casa", "house", "home", "chirie", "rate", "credit"],
   utilities: ["utilitati", "utilities", "curent", "apa", "gaz"],
@@ -31,6 +32,8 @@ const CATEGORY_KEYWORDS: Record<Bill["category"], string[]> = {
   other: ["altele", "other"],
 };
 
+const LIST_WORDS = ["facturi", "factura", "arata", "lista", "vezi", "toate", "toate facturile"];
+const BILL_WORDS = ["cat", "cand", "scadent", "suma", "pret", "platit", "restant", "neplatit", "cost"];
 const STATUS_DUE = ["restant", "neplatit", "datorat", "due", "unpaid", "neachitat"];
 const STATUS_PAID = ["platit", "paid", "achitat"];
 const TOTAL_WORDS = ["total", "cat trebuie", "how much", "cat am", "suma"];
@@ -69,7 +72,12 @@ export function answerBillQuestion(
     return anomalies.map(warningFor).join("\n");
   }
 
-  const byProvider = bills.find((b) => q.includes(normalizeSpeech(b.provider)));
+  // A company name alone is not a bill question either: "rovinieta" in a travel question
+  // must not pull up the bill. Only answer with the bill when the question is about bills.
+  const billQuestion = includesAny(q, [...LIST_WORDS, ...BILL_WORDS]);
+  const byProvider = billQuestion
+    ? bills.find((b) => q.includes(normalizeSpeech(b.provider)))
+    : undefined;
   if (byProvider) {
     // Price mistake first, so the client sees it before the normal details.
     const anomaly = detectBillAnomalies(histories).find(
@@ -79,9 +87,13 @@ export function answerBillQuestion(
     return describe(byProvider);
   }
 
-  const category = (Object.keys(CATEGORY_KEYWORDS) as Bill["category"][]).find((c) =>
-    includesAny(q, CATEGORY_KEYWORDS[c]),
-  );
+  // A category word alone is not a bill question ("am nevoie de rovinietă în Budapesta?").
+  // Only list the category when the user asks to see bills.
+  const category = includesAny(q, LIST_WORDS)
+    ? (Object.keys(CATEGORY_KEYWORDS) as Bill["category"][]).find((c) =>
+        includesAny(q, CATEGORY_KEYWORDS[c]),
+      )
+    : undefined;
   if (category) {
     const matches = bills.filter((b) => b.category === category);
     const label = CATEGORY_LABEL_RO[category].toLowerCase();
@@ -109,5 +121,5 @@ export function answerBillQuestion(
     return next ? `Următoarea scadență: ${describe(next)}` : "Nu ai scadențe viitoare.";
   }
 
-  return "Te pot ajuta cu facturile: furnizor, sumă, scadență, stare sau categorie. Ce vrei să știi?";
+  return FALLBACK_REPLY;
 }

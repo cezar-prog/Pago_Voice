@@ -26,6 +26,18 @@ export interface MicMeter {
 }
 
 /**
+ * iPhone/iPad: an open getUserMedia stream (this meter) takes the audio input away from
+ * speech recognition, so the assistant can't hear the user. The meter is only decoration,
+ * so it is skipped there and the recogniser keeps the microphone.
+ */
+export function meterAvailable(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  const iOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return !iOS;
+}
+
+/**
  * Opens the microphone and reports, every animation frame:
  * - `onLevel`: overall loudness (RMS)
  * - `spectrum`: SPECTRUM_BARS values 0..1 for the speech frequencies, written in place
