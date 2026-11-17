@@ -1,12 +1,16 @@
-// Intent recognition for the local (mock) assistant.
+// The assistant's action catalogue, plus the offline keyword router.
+//
+// The AI is the primary router for every message: it classifies the message as
+// TRANSACTIONAL, INFORMATIONAL or OUT_OF_SCOPE and picks the action from this list. The
+// keyword matching below is used only when the AI is unavailable (offline fallback), and it
+// never runs before the AI.
 //
 // Each entry is one intent. Keywords are matched against the message after normalizeSpeech():
 // lowercase, no diacritics, no punctuation. A keyword is either a plain string (substring match)
 // or a RegExp. Entries are checked in order and the first match wins, so put more specific
 // intents first.
 //
-// `local: true` means the message is handled here and never sent to the AI endpoint
-// (cart, checkout and invoice actions must always change the app state).
+// `local: true` marks an action the offline router can carry out without the AI.
 
 export type IntentName =
   | "PAY_ALL"

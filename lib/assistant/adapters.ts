@@ -1,5 +1,10 @@
-import { isShowAllMonth, localReply, respondToCommand, suspiciousBillWarning } from "./commands";
-import type { ChatReply } from "@/lib/types";
+import {
+  executeAssistantReply,
+  isShowAllMonth,
+  respondToCommand,
+  suspiciousBillWarning,
+} from "./commands";
+import type { AssistantReply } from "@/lib/types";
 import type { AssistantAdapters, AssistantCommands, ChatMessage, RecognizerHandlers } from "./types";
 
 // Romanian: the app UI, speech recognition and synthesis are all in Romanian.
@@ -8,11 +13,32 @@ const VOICE_ENABLED = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
 const CHAT_ENDPOINT = "/api/chat";
 /** Longest wait for the AI or the voice service before we answer locally, so the loader always stops. */
 const REQUEST_TIMEOUT_MS = 15_000;
+/** One-sample silent WAV, used to unlock the player on a tap. */
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
 let ttsToken = 0;
-let currentAudio: HTMLAudioElement | null = null;
 let speechActive = false;
 let speechPaused = false;
+/**
+ * One shared <audio> element for every reply. iOS only lets an element play if a user tap
+ * started it, so the same element is unlocked on the tap and reused for the spoken reply.
+ */
+let player: HTMLAudioElement | null = null;
+
+function getPlayer(): HTMLAudioElement {
+  if (!player) {
+    player = new Audio();
+    player.preload = "auto";
+  }
+  return player;
+}
+
+function unlockAudio() {
+  if (typeof window === "undefined") return;
+  const audio = getPlayer();
+  audio.src = SILENT_WAV;
+  audio.play().then(() => audio.pause()).catch(() => {});
+}
 
 function toApiMessages(input: string, history: ChatMessage[]) {
   const messages = history
@@ -59,19 +85,8 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-/**
- * Answers one message: the local router first (cart, checkout, unpaid list, follow-up),
- * then the AI endpoint, then the local bill answers if the AI is down or slow.
- */
-async function answer(
-  input: string,
-  history: ChatMessage[],
-  commands: AssistantCommands,
-): Promise<string> {
-  // Cart, checkout, unpaid list and the payment follow-up are answered here, never by the AI.
-  const local = localReply(input, commands, history);
-  if (local !== null) return local;
-
+/** Asks the AI for its strict structured reply. Throws when it is missing, fails or times out. */
+async function askAi(input: string, history: ChatMessage[], commands: AssistantCommands) {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -85,46 +100,55 @@ async function answer(
       signal: controller.signal,
     });
     if (!res.ok) throw new Error(`chat ${res.status}`);
-
-    const data = (await res.json()) as Partial<ChatReply>;
-    commands.setDirective({
-      action: typeof data.action === "string" ? data.action : "NONE",
-      target: typeof data.billId === "string" ? data.billId : null,
-    });
-
-    // The AI asked to prepare a payment: put that bill in our cart (checkout stays ours).
-    if (data.action === "PREPARE_PAYMENT" && typeof data.billId === "string") {
-      const bill = commands.bills.find((b) => b.id === data.billId);
-      if (bill && bill.status === "due") {
-        commands.addBillToCart({
-          id: bill.id,
-          providerName: bill.provider,
-          amount: bill.amount,
-          dueDate: bill.dueDate,
-        });
-      }
+    const data = (await res.json()) as Partial<AssistantReply>;
+    if (typeof data.responseText !== "string" || !data.responseText.trim()) {
+      throw new Error("empty responseText");
     }
-    if (typeof data.reply === "string" && data.reply) return data.reply;
-  } catch {
-    // AI not connected, failed or timed out: answer from the local bill data below.
+    return data as AssistantReply;
   } finally {
     window.clearTimeout(timer);
   }
-  return respondToCommand(input, commands, history);
 }
 
 /**
- * Default adapters. Answers come from the local router and the AI endpoint (/api/chat).
- * The local answers are the fallback when the AI is not connected, fails or times out.
+ * The AI is the primary router. Its structured reply is the source of truth: `responseText`
+ * is always returned for the app to show and speak, and the app acts only on TRANSACTIONAL
+ * replies with an action. The local keyword router runs only when the AI is unavailable.
+ */
+async function answer(
+  input: string,
+  history: ChatMessage[],
+  commands: AssistantCommands,
+): Promise<string> {
+  let reply: AssistantReply;
+  try {
+    reply = await askAi(input, history, commands);
+  } catch {
+    // AI not connected, failed or timed out: offline fallback, the local router.
+    const local = respondToCommand(input, commands, history);
+    const warning = isShowAllMonth(input) ? suspiciousBillWarning(commands.bills) : null;
+    return warning ? `${local}\n\n${warning}` : local;
+  }
+
+  commands.setDirective({ action: reply.action, target: null });
+  executeAssistantReply(reply, commands);
+
+  // "Show all this month": warn about unusually high bills even on a general query.
+  const warning =
+    reply.triage === "TRANSACTIONAL" && reply.action === "SHOW_ALL"
+      ? suspiciousBillWarning(commands.bills)
+      : null;
+  return warning ? `${reply.responseText}\n\n${warning}` : reply.responseText;
+}
+
+/**
+ * Default adapters. Answers come from the AI endpoint (/api/chat), which returns the strict
+ * structured reply for every message. The local router answers only when the AI is unavailable.
  */
 export const defaultAdapters: AssistantAdapters = {
-  respond: async (input, history, commands) => {
-    const reply = await answer(input, history, commands);
-    // "Show all this month": warn about any bill that is unusually high, even on a general query.
-    if (!isShowAllMonth(input)) return reply;
-    const warning = suspiciousBillWarning(commands.bills);
-    return warning ? `${reply}\n\n${warning}` : reply;
-  },
+  unlockAudio,
+
+  respond: (input, history, commands) => answer(input, history, commands),
 
   speak: (text, onDone) => {
     if (!VOICE_ENABLED || typeof window === "undefined") {
@@ -148,23 +172,30 @@ export const defaultAdapters: AssistantAdapters = {
       .then((blob) => {
         window.clearTimeout(timer);
         if (token !== ttsToken) return;
-        const audio = new Audio(URL.createObjectURL(blob));
-        currentAudio = audio;
+        const audio = getPlayer();
+        const url = URL.createObjectURL(blob);
         const done = () => {
-          URL.revokeObjectURL(audio.src);
-          if (currentAudio === audio) currentAudio = null;
+          audio.onended = null;
+          audio.onerror = null;
+          URL.revokeObjectURL(url);
           if (token !== ttsToken) return;
           speechActive = false;
           onDone();
         };
         audio.onended = done;
         audio.onerror = done;
+        audio.src = url;
         audio.volume = 0.235;
         if (speechPaused) return; // Muted while loading: starts when resumed.
-        audio.play().catch(done);
+        audio.play().catch((err) => {
+          // Blocked autoplay (iOS without a tap) or a bad file: say why, then go on.
+          console.warn("[voice] speech playback failed", err);
+          done();
+        });
       })
-      .catch(() => {
+      .catch((err) => {
         window.clearTimeout(timer);
+        console.warn("[voice] speech request failed", err);
         if (token !== ttsToken) return;
         speechActive = false;
         onDone();
@@ -175,20 +206,19 @@ export const defaultAdapters: AssistantAdapters = {
     ttsToken++;
     speechActive = false;
     speechPaused = false;
-    currentAudio?.pause();
-    currentAudio = null;
+    player?.pause();
   },
 
   pauseSpeech: () => {
     speechPaused = true;
-    currentAudio?.pause();
+    player?.pause();
     return speechActive;
   },
 
   resumeSpeech: () => {
     speechPaused = false;
-    if (currentAudio) {
-      const audio = currentAudio;
+    if (player && speechActive) {
+      const audio = player;
       audio.play().catch(() => audio.onerror?.(new Event("error")));
     }
     return speechActive;

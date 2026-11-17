@@ -1,5 +1,4 @@
-import type { Bill, ChatReply, VoiceAction } from '@/lib/types';
-import { INTENT_DICTIONARY } from '@/lib/assistant/intents';
+import type { AssistantAction, AssistantReply, AssistantTriage, Bill } from '@/lib/types';
 
 export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-5-5';
 
@@ -12,56 +11,47 @@ export interface ChatRequest {
   bills: Bill[];
 }
 
-const ACTION_NAMES: VoiceAction[] = [
-  'NONE',
-  'CLOSE',
-  'PREPARE_PAYMENT',
-  ...INTENT_DICTIONARY.map((entry) => entry.intent),
-];
+const TRIAGE_VALUES: AssistantTriage[] = ['TRANSACTIONAL', 'INFORMATIONAL', 'UNKNOWN'];
+const ACTION_VALUES: AssistantAction[] = ['PAY_ALL', 'ADD_SPECIFIC', 'SHOW_ALL', 'SHOW_SPECIFIC', 'NONE'];
 
-// Actions that must carry a bill id in `target`. Every other action gets target = null.
-const BILL_TARGET_ACTIONS = new Set<VoiceAction>([
-  'PREPARE_PAYMENT',
-  'OPEN_INVOICE',
-  'ADD_TO_CART',
-  'REMOVE_FROM_CART',
-]);
+/** The fixed reply for unrelated questions. */
+export const UNKNOWN_REPLY =
+  'Sunt asistentul tău pentru plăți Pago. Te pot ajuta cu facturile, taxele auto sau reîncărcări. Cum te pot asista cu acestea?';
 
-const ACTION_LINES = [
-  '- NONE: în toate celelalte cazuri.',
-  '- CLOSE: când utilizatorul spune la revedere sau mulțumește și încheie conversația.',
-  '- PREPARE_PAYMENT: doar când utilizatorul cere clar să plătești o factură anume neplătită (de exemplu „plătește Enel”). target = id-ul facturii.',
-  ...INTENT_DICTIONARY.map(
-    (entry) =>
-      `- ${entry.intent}: ${entry.description}${BILL_TARGET_ACTIONS.has(entry.intent) ? ' target = id-ul facturii.' : ' target = null.'}`,
-  ),
-].join('\n');
+const SYSTEM_PROMPT = `You are Pago Voice, an elite, ultra-precise financial AI assistant.
+The user talks to you in Romanian. Your responseText is always in natural, spoken Romanian, short (at most 2 sentences), with no lists, emoji or markdown.
 
-const SYSTEM_PROMPT = `Ești Pago Voice, asistentul aplicației Pago pentru plata facturilor. Ești prietenos și foarte concis.
+Rule 1: Always analyze the user's intent in the "thinking" field first. In "thinking", list the entities you found (company names, categories, or "TOT"), then decide the triage and the action. "thinking" comes before every other field.
+Rule 2: If the user asks "Cât costă rovinieta", the action is SHOW_SPECIFIC and targetEntities is ["rovinieta"]. Answer the price in responseText from the bill list.
+Rule 3: If the user asks an informational question (for example "Am nevoie de rovinietă în Budapesta?"), triage is INFORMATIONAL, action is NONE, targetEntities is [], and responseText is a helpful answer. Use general knowledge about the trip, and mention a matching bill from the list when it is relevant (for example "Rovinieta ta în Pago este de 150 RON, scadentă la 15 ianuarie 2027"). If you are not sure of a travel rule, say so and recommend the official source.
+Rule 4: If the user says "Plătește tot", action is PAY_ALL, triage is TRANSACTIONAL, and targetEntities is ["TOT"].
+Rule 5: NEVER guess. If the message is unrelated to Pago, its bills or payments, triage is UNKNOWN, action is NONE, targetEntities is [], and responseText is exactly: "${UNKNOWN_REPLY}"
 
-Reguli:
-- Răspunde întotdeauna în limba română, chiar dacă utilizatorul scrie în altă limbă.
-- Folosește cel mult 2 propoziții scurte în text. Fără liste, emoji sau markdown.
-- Cunoști doar facturile de mai jos. Nu inventa facturi, furnizori, sume sau date.
-- Răspunde la întrebări folosind lista de facturi: totaluri, comparații (cea mai scumpă sau cea mai ieftină), scadențe, starea plătită sau neplătită și detalii precum notele.
-- Sumele sunt în RON. Scrie sumele ca 142,50 RON și datele ca 15 decembrie.
-- Dacă o factură este deja plătită, spune asta și nu oferi să o plătești din nou.
-- Dacă întrebarea nu e clară sau mai multe facturi se potrivesc, pune o întrebare scurtă de clarificare și folosește action NONE.
+Other actions:
+- ADD_SPECIFIC: TRANSACTIONAL, the user wants to add one or more named bills to the cart ("adaugă Digi și Electrica", "plătesc Digi, Engie și Orange"). targetEntities lists the company names, one per company. Only unpaid bills are added; say in responseText when a bill is already paid.
+- SHOW_ALL: TRANSACTIONAL, the user wants the list of all bills this month ("ce facturi am luna asta?"). targetEntities is [].
+- SHOW_SPECIFIC: TRANSACTIONAL, the user wants to see one bill ("arată factura Enel"). targetEntities lists that bill.
+- The answer for "ce facturi am de plată?" (unpaid bills) is a TRANSACTIONAL SHOW_ALL, and responseText lists only the unpaid bills and ends with exactly: "Vrei să plătim ceva acum? Dacă da, ce?"
 
-Acțiuni (câmpul action, exact una din listă):
-${ACTION_LINES}
+Only TRANSACTIONAL messages with an action other than NONE change the app. Never add a paid bill. Never invent bills, companies, amounts or dates.
 
-Format de răspuns OBLIGATORIU: returnează DOAR un obiect JSON valid, fără markdown, fără ghilimele de cod și fără text în afara JSON-ului, cu exact aceste chei:
-{ "text": "răspunsul vorbit, în română conversațională", "action": "ACTION_NAME", "target": "id-ul facturii sau null" }`;
+Return ONLY one JSON object, with no markdown, no code fences and no text outside it, with exactly these keys, in this order:
+{"thinking": "...", "triage": "TRANSACTIONAL | INFORMATIONAL | UNKNOWN", "action": "PAY_ALL | ADD_SPECIFIC | SHOW_ALL | SHOW_SPECIFIC | NONE", "targetEntities": ["..."], "responseText": "..."}`;
 
+/**
+ * Strict JSON Schema for the AI reply. Every key is required, nothing extra is allowed,
+ * and the enums are closed. Providers enforce it; parseStructuredReply checks it again.
+ */
 export const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
-    text: { type: 'string' },
-    action: { type: 'string', enum: ACTION_NAMES },
-    target: { type: ['string', 'null'] },
+    thinking: { type: 'string' },
+    triage: { type: 'string', enum: TRIAGE_VALUES },
+    action: { type: 'string', enum: ACTION_VALUES },
+    targetEntities: { type: 'array', items: { type: 'string' } },
+    responseText: { type: 'string' },
   },
-  required: ['text', 'action', 'target'],
+  required: ['thinking', 'triage', 'action', 'targetEntities', 'responseText'],
   additionalProperties: false,
 } as const;
 
@@ -123,34 +113,39 @@ function describeBills(bills: Bill[]): string {
 }
 
 export function buildSystemPrompt(bills: Bill[], today: string): string {
-  return `${SYSTEM_PROMPT}\n\nData de azi: ${today}\n\nFacturile utilizatorului:\n${describeBills(bills)}`;
+  return `${SYSTEM_PROMPT}\n\nToday: ${today}\n\nThe user's bills:\n${describeBills(bills)}`;
 }
 
 /**
- * Parses the model output `{ text, action, target }` and maps it to the ChatReply
- * shape the client consumes (`reply`, `action`, `billId`).
+ * Strict check of the model output. Returns the reply only when every key is present with
+ * the right type and an allowed value; anything else returns null (the caller answers with
+ * the offline fallback). Invalid triage or action values are never guessed.
  */
-export function parseAssistantReply(raw: string, bills: Bill[]): ChatReply | null {
+export function parseStructuredReply(raw: string): AssistantReply | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
     return null;
   }
-  if (!parsed || typeof parsed !== 'object') return null;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const data = parsed as Record<string, unknown>;
 
-  const text = typeof data.text === 'string' ? data.text.trim() : '';
-  if (!text) return null;
+  const allowed = ['thinking', 'triage', 'action', 'targetEntities', 'responseText'];
+  if (Object.keys(data).some((k) => !allowed.includes(k))) return null;
+  if (typeof data.thinking !== 'string') return null;
+  if (!TRIAGE_VALUES.includes(data.triage as AssistantTriage)) return null;
+  if (!ACTION_VALUES.includes(data.action as AssistantAction)) return null;
+  if (!Array.isArray(data.targetEntities) || !data.targetEntities.every((e) => typeof e === 'string')) {
+    return null;
+  }
+  if (typeof data.responseText !== 'string' || !data.responseText.trim()) return null;
 
-  const requested = ACTION_NAMES.find((name) => name === data.action) ?? 'NONE';
-  const target = typeof data.target === 'string' ? data.target : null;
-  const bill = target ? bills.find((b) => b.id === target) : undefined;
-
-  let action: VoiceAction = requested;
-  if (BILL_TARGET_ACTIONS.has(action) && !bill) action = 'NONE';
-  if (action === 'PREPARE_PAYMENT' && bill?.status === 'paid') action = 'NONE';
-
-  const billId = BILL_TARGET_ACTIONS.has(action) && bill ? bill.id : null;
-  return { reply: text, action, billId };
+  return {
+    thinking: data.thinking,
+    triage: data.triage as AssistantTriage,
+    action: data.action as AssistantAction,
+    targetEntities: data.targetEntities as string[],
+    responseText: data.responseText.trim(),
+  };
 }

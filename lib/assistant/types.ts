@@ -75,6 +75,11 @@ export interface AssistantDirective {
  * can replace any of them without touching the components.
  */
 export interface AssistantAdapters {
+  /**
+   * Call inside a user tap. iOS only plays audio that a tap started, so this unlocks the
+   * shared player before the (later, async) spoken reply arrives.
+   */
+  unlockAudio?: () => void;
   /** Produce the assistant's answer for a user message, and may trigger `commands`. */
   respond: (
     input: string,

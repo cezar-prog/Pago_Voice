@@ -138,6 +138,8 @@ export function AssistantProvider({
   }, []);
 
   const open = useCallback(() => {
+    // Runs inside the user's tap: unlocks audio so replies can be spoken on iPhone.
+    adaptersRef.current.unlockAudio?.();
     if (isOpenRef.current) return;
     isOpenRef.current = true;
     turnRef.current += 1;
@@ -261,10 +263,12 @@ export function AssistantProvider({
   }, [handleUtterance]);
 
   const sendText = useCallback((text: string) => {
+    adaptersRef.current.unlockAudio?.();
     void handleUtteranceRef.current(text);
   }, []);
 
   const toggleMic = useCallback(() => {
+    adaptersRef.current.unlockAudio?.();
     setMicOn((on) => !on);
     setLiveTranscript("");
     setLastActivity(Date.now());

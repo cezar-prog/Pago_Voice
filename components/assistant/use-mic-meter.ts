@@ -6,6 +6,7 @@ import {
   METER_FULL_SCALE,
   SPECTRUM_BARS,
   classifyLevel,
+  meterAvailable,
   startMicMeter,
   type MicMeter,
   type MicZone,
@@ -28,7 +29,7 @@ export function useMicMeter(enabled: boolean): MicMeterState {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !meterAvailable()) return;
 
     let cancelled = false;
     let meter: MicMeter | null = null;
