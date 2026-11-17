@@ -3,14 +3,24 @@ import { answerBillQuestion } from "./bills";
 import { formatRon, plural } from "./format";
 import { detectIntent, type IntentName } from "./intents";
 import { normalizeSpeech } from "./text";
-import type { AssistantCommands, Bill, CartBill } from "./types";
+import type { AssistantCommands, Bill, CartBill, ChatMessage } from "./types";
 
 // Local Romanian router for the cart, checkout and invoice actions. The intents
 // themselves are defined in intents.ts; this file only says what each intent does.
 // The AI backend can replace this and call the same `commands` methods.
 
-const total = (items: CartBill[]) => items.reduce((sum, b) => sum + b.amount, 0);
+/** The question that ends every "what do I owe" answer. It opens the stateful follow-up. */
+export const PAYMENT_FOLLOW_UP = "Vrei să plătim ceva acum? Dacă da, ce?";
+
+const YES_WORDS = ["da", "sigur", "bine", "ok", "desigur"];
+const NO_WORDS = ["nu", "nu acum", "mai tarziu", "later"];
+
+const total = (items: { amount: number }[]) => items.reduce((sum, b) => sum + b.amount, 0);
 const facturi = (n: number) => `${n} ${plural(n, "factură", "facturi")}`;
+
+/** "A", "A și B", "A, B și C". */
+const joinRo = (names: string[]) =>
+  names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} și ${names[names.length - 1]}`;
 
 const toCartBill = (b: Bill): CartBill => ({
   id: b.id,
@@ -22,20 +32,85 @@ const toCartBill = (b: Bill): CartBill => ({
 const listCart = (items: CartBill[]) =>
   items.map((b) => `• ${b.providerName}: ${formatRon(b.amount)}`).join("\n");
 
-/** Finds the bill whose company name appears in the normalized text. */
-const findBill = (q: string, bills: Bill[]) =>
-  bills.find((b) => q.includes(normalizeSpeech(b.provider)));
+/**
+ * Bills whose company is named in the text. Matches the full provider name, or its first
+ * word on its own, so "Engie" finds "Engie Gaz" and "Electrica" finds "Electrica".
+ */
+const findBills = (q: string, bills: Bill[]): Bill[] => {
+  const words = new Set(q.split(" "));
+  return bills.filter((b) => {
+    const name = normalizeSpeech(b.provider);
+    return q.includes(name) || words.has(name.split(" ")[0]);
+  });
+};
+
+const findBill = (q: string, bills: Bill[]) => findBills(q, bills)[0];
+
+/** True when the last assistant message asked the payment follow-up question. */
+function isAwaitingPaymentChoice(history: ChatMessage[]): boolean {
+  const last = [...history].reverse().find((m) => m.role === "assistant");
+  return last?.text.trim().endsWith(PAYMENT_FOLLOW_UP) ?? false;
+}
+
+/**
+ * Adds the given bills to the cart. Paid bills and bills already in the cart are skipped
+ * and reported. The cart UI (the cart pill) shows as soon as the cart has items.
+ */
+function addBills(matched: Bill[], c: AssistantCommands): string {
+  const inCart = new Set(c.paymentCart.map((b) => b.id));
+  const added: CartBill[] = [];
+  const notes: string[] = [];
+
+  for (const bill of matched) {
+    if (bill.status === "paid") {
+      notes.push(`${bill.provider} este deja plătită.`);
+    } else if (inCart.has(bill.id)) {
+      notes.push(`${bill.provider} este deja în coș.`);
+    } else {
+      const item = toCartBill(bill);
+      c.addBillToCart(item);
+      inCart.add(bill.id);
+      added.push(item);
+    }
+  }
+
+  if (added.length === 0) return notes.join(" ") || "Nu am ce adăuga în coș.";
+  const cart = [...c.paymentCart, ...added];
+  const names = joinRo(added.map((b) => b.providerName));
+  const summary = `Am adăugat ${names}. Coș: ${facturi(cart.length)}, total ${formatRon(total(cart))}.`;
+  return [summary, ...notes].join(" ");
+}
 
 type Handler = (q: string, c: AssistantCommands) => string;
 
 /** One handler per intent name. Adding an intent means adding an entry in intents.ts and here. */
 const HANDLERS: Record<IntentName, Handler> = {
+  PAY_ALL: (_q, c) => {
+    const unpaid = c.bills.filter((b) => b.status === "due");
+    if (unpaid.length === 0) return "Nu ai nicio factură de plătit.";
+    for (const bill of unpaid) c.addBillToCart(toCartBill(bill));
+    // The cart only ever holds unpaid bills, so this total is the cart total.
+    c.openCheckout();
+    return `Am pregătit toate cele ${facturi(unpaid.length)}, în total ${formatRon(total(unpaid))}. Deschid plata.`;
+  },
+
   CHECKOUT: (_q, c) => {
     if (c.paymentCart.length === 0) {
       return "Coșul este gol. Adaugă mai întâi o factură, de exemplu: adaugă Enel.";
     }
     c.openCheckout();
     return `Deschid plata pentru ${facturi(c.paymentCart.length)}, în total ${formatRon(total(c.paymentCart))}.`;
+  },
+
+  UNPAID_BILLS: (_q, c) => {
+    const due = c.bills.filter((b) => b.status === "due");
+    const body =
+      due.length === 0
+        ? "Nu ai nimic de plătit acum. Bravo!"
+        : `Facturi de plătit:\n${due
+            .map((b) => `• ${b.provider}: ${formatRon(b.amount)}`)
+            .join("\n")}\nTotal: ${formatRon(total(due))}`;
+    return `${body}\n\n${PAYMENT_FOLLOW_UP}`;
   },
 
   OPEN_INVOICE: (q, c) => {
@@ -58,16 +133,11 @@ const HANDLERS: Record<IntentName, Handler> = {
   },
 
   ADD_TO_CART: (q, c) => {
-    const bill = findBill(q, c.bills);
-    if (!bill) return "Care factură? Spune un nume de companie, de exemplu Enel sau Digi.";
-    if (bill.status === "paid") return `${bill.provider} este deja plătită.`;
-    if (c.paymentCart.some((b) => b.id === bill.id)) {
-      return `${bill.provider} este deja în coș.`;
+    const matched = findBills(q, c.bills);
+    if (matched.length === 0) {
+      return "Care factură? Spune un nume de companie, de exemplu Enel sau Digi.";
     }
-    const item = toCartBill(bill);
-    c.addBillToCart(item);
-    const cart = [...c.paymentCart, item];
-    return `Am adăugat ${bill.provider} (${formatRon(bill.amount)}). Coș: ${facturi(cart.length)}, total ${formatRon(total(cart))}.`;
+    return addBills(matched, c);
   },
 
   VIEW_CART: (_q, c) => {
@@ -85,17 +155,36 @@ const HANDLERS: Record<IntentName, Handler> = {
   },
 };
 
-/** True when the message is a local cart, checkout or invoice action (not sent to the AI). */
-export function isCartCommand(input: string): boolean {
-  return detectIntent(normalizeSpeech(input))?.local === true;
+/**
+ * The answer for a message handled locally (cart, checkout, invoice, unpaid list, or the
+ * reply to our payment follow-up). Returns null when the AI should answer.
+ */
+export function localReply(input: string, c: AssistantCommands, history: ChatMessage[] = []): string | null {
+  const q = normalizeSpeech(input);
+  if (!q) return null;
+
+  const intent = detectIntent(q);
+  if (intent?.local) return HANDLERS[intent.intent](q, c);
+
+  // Stateful follow-up: we just asked "Vrei să plătim ceva acum?".
+  if (isAwaitingPaymentChoice(history)) {
+    const matched = findBills(q, c.bills);
+    if (matched.length > 0) return addBills(matched, c);
+    if (YES_WORDS.includes(q)) return "Spune ce factură vrei să plătești, de exemplu Enel sau Digi.";
+    if (NO_WORDS.includes(q)) return "Bine, nu plătim acum.";
+  }
+  return null;
 }
 
-/** Answers one user message. Matches an intent from the dictionary, otherwise answers from the bills. */
-export function respondToCommand(input: string, c: AssistantCommands): string {
+/** Answers one user message. Local actions first, then the intent handlers, then the bill answers. */
+export function respondToCommand(input: string, c: AssistantCommands, history: ChatMessage[] = []): string {
   const q = normalizeSpeech(input);
   if (!q) return "Nu am înțeles. Poți repeta?";
 
+  const local = localReply(input, c, history);
+  if (local !== null) return local;
+
   const intent = detectIntent(q);
-  if (!intent) return answerBillQuestion(input, c.bills);
-  return HANDLERS[intent.intent](q, c);
+  if (intent) return HANDLERS[intent.intent](q, c);
+  return answerBillQuestion(input, c.bills);
 }
