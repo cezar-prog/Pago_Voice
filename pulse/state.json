@@ -48,6 +48,12 @@
       "member": 2,
       "time": "17 noiembrie 2026, 13:37 (ora României)",
       "headline": "Asistentul poartă o conversație mai bună: întreabă ce plătim, plătește tot și avertizează asupra sumelor mari"
+    },
+    {
+      "n": 9,
+      "member": 2,
+      "time": "17 noiembrie 2026, 13:38 (ora României)",
+      "headline": "Asistentul ascultă „salut Pago”, sună un semnal și se deschide singur; cheia AI lipsește încă"
     }
   ],
   "members": {
@@ -64,13 +70,13 @@
       "next": "Pasul următor nu a fost formulat în această sesiune; pagina de progres este pasul curent."
     },
     "2": {
-      "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, un coș în care strângi mai multe facturi, o plată confirmată cu Face ID sau PIN și vizualizarea facturii în format PDF.",
-      "works": "Coșul și plata funcționează prin voce sau text. Vizualizatorul deschide o factură de test pentru fiecare furnizor. Asistentul întreabă acum dacă vrei să plătești ceva, poate plăti toate facturile, adaugă mai multe facturi odată și avertizează asupra sumelor neobișnuite. Răspunsul AI are un format structurat. Modificările din ultima sesiune nu sunt încă comise, iar nimic din acestea nu a fost verificat cu npm run build sau lint.",
-      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu funcționează încă. Node.js nu este accesibil din sesiunea mea, deci nu pot rula build-ul. Vizualizatorul de facturi și conversația nu au fost testate pe telefon.",
+      "building": "Un asistent AI vocal pentru aplicația Pago: o bulă care răspunde la întrebări despre facturi, se activează cu „salut Pago”, un coș în care strângi mai multe facturi, o plată confirmată cu Face ID sau PIN și vizualizarea facturii în format PDF.",
+      "works": "Asistentul se activează prin voce cu „salut Pago”, sună un semnal discret și se salută. Coșul și plata funcționează prin voce sau text, iar vizualizatorul deschide o factură de test pentru fiecare furnizor. Asistentul întreabă ce vrei să plătești, poate plăti toate facturile, adaugă mai multe odată și avertizează asupra sumelor neobișnuite. Modificările sunt comise în ramura ui-pago, iar ramura principală are acum PR-ul de integrare.",
+      "blocking": "Lipsește fișierul .env.local cu cheia API, deci răspunsurile AI nu sunt verificate. Nu am rulat npm run build sau lint în această sesiune. Vocea, vizualizatorul de facturi și conversația nu au fost testate pe telefon.",
       "features": [
         {
           "name": "Claude Code",
-          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi, dicționarul de intenții și conversația cu întrebări de urmărire."
+          "for": "A scris și modificat fișierele aplicației: pagina principală, bula asistentului, istoricul facturilor, coșul de plată, traducerea în română, conexiunea cu AI-ul, vizualizatorul de facturi, dicționarul de intenții, activarea vocală și conversația cu întrebări de urmărire."
         },
         {
           "name": "Documentația Next.js din proiect",
@@ -97,7 +103,7 @@
           "for": "Pornește actualizarea paginii de progres la fiecare 2 ore, cât timp sesiunea rămâne deschisă."
         }
       ],
-      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, să comit modificările, apoi să testez pe telefon conversația, plata și vizualizatorul de facturi."
+      "next": "Să adaug fișierul .env.local cu cheia API, să rulez npm run build și npm run lint, apoi să testez pe telefon activarea vocală, conversația, plata și vizualizatorul de facturi."
     }
   }
 }
