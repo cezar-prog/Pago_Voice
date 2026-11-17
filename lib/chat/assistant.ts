@@ -1,4 +1,5 @@
 import type { Bill, ChatReply, VoiceAction } from '@/lib/types';
+import { INTENT_DICTIONARY } from '@/lib/assistant/intents';
 
 export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-5-5';
 
@@ -11,34 +12,56 @@ export interface ChatRequest {
   bills: Bill[];
 }
 
+const ACTION_NAMES: VoiceAction[] = [
+  'NONE',
+  'CLOSE',
+  'PREPARE_PAYMENT',
+  ...INTENT_DICTIONARY.map((entry) => entry.intent),
+];
+
+// Actions that must carry a bill id in `target`. Every other action gets target = null.
+const BILL_TARGET_ACTIONS = new Set<VoiceAction>([
+  'PREPARE_PAYMENT',
+  'OPEN_INVOICE',
+  'ADD_TO_CART',
+  'REMOVE_FROM_CART',
+]);
+
+const ACTION_LINES = [
+  '- NONE: în toate celelalte cazuri.',
+  '- CLOSE: când utilizatorul spune la revedere sau mulțumește și încheie conversația.',
+  '- PREPARE_PAYMENT: doar când utilizatorul cere clar să plătești o factură anume neplătită (de exemplu „plătește Enel”). target = id-ul facturii.',
+  ...INTENT_DICTIONARY.map(
+    (entry) =>
+      `- ${entry.intent}: ${entry.description}${BILL_TARGET_ACTIONS.has(entry.intent) ? ' target = id-ul facturii.' : ' target = null.'}`,
+  ),
+].join('\n');
+
 const SYSTEM_PROMPT = `Ești Pago Voice, asistentul aplicației Pago pentru plata facturilor. Ești prietenos și foarte concis.
 
 Reguli:
 - Răspunde întotdeauna în limba română, chiar dacă utilizatorul scrie în altă limbă.
-- You must respond strictly in conversational, natural Romanian. Do not use English.
-- Folosește cel mult 2 propoziții scurte. Fără liste, emoji sau markdown.
+- Folosește cel mult 2 propoziții scurte în text. Fără liste, emoji sau markdown.
 - Cunoști doar facturile de mai jos. Nu inventa facturi, furnizori, sume sau date.
 - Răspunde la întrebări folosind lista de facturi: totaluri, comparații (cea mai scumpă sau cea mai ieftină), scadențe, starea plătită sau neplătită și detalii precum notele.
 - Sumele sunt în RON. Scrie sumele ca 142,50 RON și datele ca 15 decembrie.
 - Dacă o factură este deja plătită, spune asta și nu oferi să o plătești din nou.
-- Dacă întrebarea nu e clară sau mai multe facturi se potrivesc, pune o întrebare scurtă de clarificare.
+- Dacă întrebarea nu e clară sau mai multe facturi se potrivesc, pune o întrebare scurtă de clarificare și folosește action NONE.
 
-Acțiuni:
-- PREPARE_PAYMENT: doar când utilizatorul cere clar să plătești sau să pregătești o factură anume neplătită (de exemplu „plătește Enel”). Pune id-ul exact al facturii din listă în billId și confirmă scurt în reply că pregătești plata pe cardul salvat.
-- CLOSE: când utilizatorul spune la revedere sau mulțumește și încheie conversația. Răspunde cu un scurt la revedere.
-- NONE: în toate celelalte cazuri.
-- billId trebuie să fie null, decât dacă acțiunea este PREPARE_PAYMENT.
+Acțiuni (câmpul action, exact una din listă):
+${ACTION_LINES}
 
-Format de răspuns: returnează doar un obiect JSON valid cu câmpurile reply (text), action (NONE, PREPARE_PAYMENT sau CLOSE) și billId (id-ul facturii sau null).`;
+Format de răspuns OBLIGATORIU: returnează DOAR un obiect JSON valid, fără markdown, fără ghilimele de cod și fără text în afara JSON-ului, cu exact aceste chei:
+{ "text": "răspunsul vorbit, în română conversațională", "action": "ACTION_NAME", "target": "id-ul facturii sau null" }`;
 
 export const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
-    reply: { type: 'string' },
-    action: { type: 'string', enum: ['NONE', 'PREPARE_PAYMENT', 'CLOSE'] },
-    billId: { type: ['string', 'null'] },
+    text: { type: 'string' },
+    action: { type: 'string', enum: ACTION_NAMES },
+    target: { type: ['string', 'null'] },
   },
-  required: ['reply', 'action', 'billId'],
+  required: ['text', 'action', 'target'],
   additionalProperties: false,
 } as const;
 
@@ -103,6 +126,10 @@ export function buildSystemPrompt(bills: Bill[], today: string): string {
   return `${SYSTEM_PROMPT}\n\nData de azi: ${today}\n\nFacturile utilizatorului:\n${describeBills(bills)}`;
 }
 
+/**
+ * Parses the model output `{ text, action, target }` and maps it to the ChatReply
+ * shape the client consumes (`reply`, `action`, `billId`).
+ */
 export function parseAssistantReply(raw: string, bills: Bill[]): ChatReply | null {
   let parsed: unknown;
   try {
@@ -113,16 +140,17 @@ export function parseAssistantReply(raw: string, bills: Bill[]): ChatReply | nul
   if (!parsed || typeof parsed !== 'object') return null;
   const data = parsed as Record<string, unknown>;
 
-  const reply = typeof data.reply === 'string' ? data.reply.trim() : '';
-  if (!reply) return null;
+  const text = typeof data.text === 'string' ? data.text.trim() : '';
+  if (!text) return null;
 
-  let action: VoiceAction =
-    data.action === 'PREPARE_PAYMENT' || data.action === 'CLOSE' ? data.action : 'NONE';
-  let billId = typeof data.billId === 'string' ? data.billId : null;
+  const requested = ACTION_NAMES.find((name) => name === data.action) ?? 'NONE';
+  const target = typeof data.target === 'string' ? data.target : null;
+  const bill = target ? bills.find((b) => b.id === target) : undefined;
 
-  const bill = billId ? bills.find((b) => b.id === billId) : undefined;
-  if (action === 'PREPARE_PAYMENT' && (!bill || bill.status === 'paid')) action = 'NONE';
-  if (action !== 'PREPARE_PAYMENT') billId = null;
+  let action: VoiceAction = requested;
+  if (BILL_TARGET_ACTIONS.has(action) && !bill) action = 'NONE';
+  if (action === 'PREPARE_PAYMENT' && bill?.status === 'paid') action = 'NONE';
 
-  return { reply, action, billId };
+  const billId = BILL_TARGET_ACTIONS.has(action) && bill ? bill.id : null;
+  return { reply: text, action, billId };
 }
